@@ -38,3 +38,23 @@ full build plan — this file is just "what happened, in order."
 - Logged the remaining open blockers (GCP project status, FSIS API key confirmation,
   sample invoice sourcing, frontend framework choice, PDF library choice, team size) in
   `docs/PHASES.md` → Blockers / open questions.
+
+## 2026-08-22 — Re-verified against the full official rules text
+
+User pasted the complete Devpost page + Official Rules directly (more reliable than the
+earlier fetched summary). Cross-checked and confirmed the deadline math (Aug 31 5pm PT =
+Sep 1 5am GMT+5 — same instant, no discrepancy). Found several facts not previously
+captured and added them to `docs/PLAN.md`, `docs/PHASES.md`, `docs/submission/
+submission-checklist.md`, and `docs/RISK_REGISTER.md`:
+- **$150 GCP credit request form deadline: Aug 28, 2026, 12pm PT** ("or while supplies
+  last") — a real near-term action item, separate from the build schedule.
+- **Judging Period runs through Oct 1, 2026** — a hosted URL (if offered) must stay
+  available for testing until then, not just past the submission deadline.
+- Official cost-saving guidance recommends **Gemini Flash by default**, escalating to Pro
+  only for complex reasoning — directly relevant since the Matching Agent calls Gemini
+  per invoice line.
+- Taskmaster's Innovation criterion (40% weight) explicitly names a **"Bring Your Own
+  Friction" (BYOF)** expectation — the project should read as solving a real, personal
+  friction. Flagged as an open framing decision, not yet resolved.
+No architecture or scope changes — this was a documentation-accuracy pass, plus new
+near-term action items surfaced.

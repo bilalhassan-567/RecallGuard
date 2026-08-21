@@ -7,12 +7,25 @@ prizes, stated explicitly in the submission text).
 Stack: **Gemini (Vertex AI) + Google ADK + Cloud Run + Firestore + Pub/Sub + Cloud
 Scheduler.**
 
-## Verified live rules (checked directly on Devpost, 2026-08-22)
+## Verified live rules (checked directly against the official Devpost page + Official
+Rules, 2026-08-22 — re-confirmed against the full page text the same day)
 
-The internal build plan this was derived from didn't carry an exact deadline. Pulled fresh
-from the official rules page — treat this section, not any earlier estimate, as authoritative:
+The internal build plan this was derived from didn't carry exact dates or the full
+per-track judging language. This section is authoritative; earlier estimates in this file
+or elsewhere are superseded by it.
 
-- **Submission deadline: August 31, 2026, 5:00 PM PT.** Strict cutoff, no edits after.
+- **Contest Period:** Aug 3, 2026, 9:00 AM PT → Aug 31, 2026, 5:00 PM PT.
+- **Submission deadline: August 31, 2026, 5:00 PM PT** = **September 1, 2026, 5:00 AM
+  GMT+5 / PKT.** Strict cutoff, no edits to the submission after (draft edits to the
+  Devpost *portfolio* page are fine post-deadline, the submission itself is frozen).
+- **Judging Period: Sep 1, 2026 (9:00 AM PT) → Oct 1, 2026 (11:45 PM PT).** Winners
+  announced on or around **Oct 8, 2026, 10:00 AM PT**.
+- **Google Cloud credit ($150) request form has its own deadline:
+  August 28, 2026, 12:00 PM PT — "or while supplies last."** This is a real near-term
+  action item, separate from the build schedule — request it early, don't wait.
+  (`https://forms.gle/riGhgDSHkHeMx8Ca6`, one code per entrant, ~72 business hours to
+  process — so requesting even a day late risks not having it in hand until deep into
+  the build window.)
 - **Submission period: August 3–31, 2026.** The project must be newly created within this
   window (pre-existing code must be disclosed — not a concern, this repo started fresh).
 - **Category (pick exactly one, mandatory field):** Taskmaster / Collaborative Partner /
@@ -20,22 +33,43 @@ from the official rules page — treat this section, not any earlier estimate, a
   Best Multimodal UX, and Individual/Hobbyist are cross-track bonus prizes judged
   separately, not alternate category picks — mention eligibility for them in the text
   description, don't try to "select" them.
-- **Mandatory tech (all three required):** Gemini 3.5+ via Gemini API or Vertex AI ✅ ·
-  one of Google ADK / GenAI SDK / Antigravity SDK / GenKit — we use **ADK** ✅ · one of
-  Cloud Run / Cloud SQL / Firestore / GKE / Pub/Sub — we use **Cloud Run + Firestore +
-  Pub/Sub** ✅ (Cloud Scheduler is extra, not itself one of the required five, but doesn't
-  hurt — Firestore/Pub/Sub/Cloud Run already satisfy the requirement).
-- **Judging (Stage Two, 1–5 scale per criterion):**
-  - Innovation & Operational Utility — **40%** ("does the system eliminate real-world
-    friction... high-value autonomous execution over simple chat queries")
-  - Architectural Discipline & Tech Stack — **30%** (decoupling, state management,
-    failure-tolerant design)
-  - Demo & Production Readiness — **30%** (doc clarity + undeniable, unedited proof of
-    execution in the 4-minute video, Google Cloud deployment visibility)
-  - Stage Three: up to **+0.6 bonus points** for blog/podcast, social post, or using
-    additional Google AI models.
-- **Team:** solo entrants explicitly allowed. Hosting a live URL is "highly encouraged,"
-  not strictly mandatory — judges need access to a working project "if available."
+- **Mandatory tech (all three required):** Gemini 3.5+ via Gemini API or Vertex AI ✅
+  (official cost-saving tips explicitly recommend **Flash first, Pro only for complex
+  final reasoning** — relevant to us since the Matching Agent calls Gemini once per
+  invoice line, so Flash-by-default is the right cost posture, escalate to Pro only if
+  match quality demands it) · one of Google ADK / GenAI SDK / Antigravity SDK / GenKit —
+  we use **ADK** ✅ · one of Cloud Run / Cloud SQL / Firestore / GKE / Pub/Sub — we use
+  **Cloud Run + Firestore + Pub/Sub** ✅ (Cloud Scheduler is extra, not itself one of the
+  required five, but doesn't hurt).
+- **Judging (Stage Two, 1–5 scale per criterion, averaged):**
+  - **Innovation & Operational Utility — 40%.** Track-specific sub-question for
+    Taskmaster: *"Does the agent successfully intercept and complete a multi-step
+    background workflow without human intervention? Did the team successfully utilize
+    the 'Bring Your Own Friction' (BYOF) mandate to solve a unique, personal problem?"*
+    **BYOF is new information, not in the internal plan** — Taskmaster is explicitly
+    scored partly on whether this solves a real friction *the builder personally has*,
+    not a generic B2B pitch. Worth deciding deliberately how to frame this in the
+    submission narrative (see open questions).
+  - **Architectural Discipline & Tech Stack — 30%.** The rules' text for this criterion
+    is written per-track under alternate track names still in the page copy — the
+    Taskmaster-mapped language ("Continuous Action Engine") asks: *"a clean, modularized,
+    ease-of-maintenance system... how does the system handle state management? Are the
+    tools properly isolated and scoped for security?"* — matches our three-agent
+    decoupling + Firestore state design directly.
+  - **Demo & Production Readiness — 30%.** *"Unedited, live execution... via terminal
+    logs, database updates, or UI changes"* + a clean architecture diagram + reproducible
+    setup + visible proof of Google Cloud deployment in the video.
+  - **Stage Three bonus, up to +0.6** on a 1–6 final scale: +0.2 public blog/podcast/video
+    (must state it was made for this hackathon) · +0.2 social post (X/LinkedIn/Instagram/
+    Facebook, must include #AllThingsAgenticHackathon) · +0.2 per additional Google AI
+    model integrated (Gemma/Veo/Lyria), capped at +0.6 total.
+- **Team:** solo entrants explicitly allowed, no team-size cap.
+- **Hosting:** "highly encouraged," not mandatory. **But if we do provide a hosted URL,
+  the rules bind us to keep it available free of charge for testing until the Judging
+  Period ends (Oct 1, 2026)** — not just through the submission deadline. If no hosted
+  URL is provided, judges evaluate from video + text + repo only, no live obligation.
+  Cloud Run's scale-to-zero means "available but idle" through Oct 1 should cost close to
+  nothing either way, so hosting is low-risk to offer.
 - **Eligibility:** legal age of majority in country of residence; a short list of excluded
   countries/territories (Italy, Quebec, Crimea, Cuba, Iran, Syria, North Korea, Sudan,
   Belarus, Russia) — self-verify this isn't a blocker before submitting.
@@ -208,3 +242,14 @@ sections above.)*
   (Aug 31, 2026, 5pm PT) and category-selection mechanics, none of which were locked in
   the internal plan. **This changes the day-by-day schedule's feasibility** — see
   `docs/PHASES.md` for the calendar reality check.
+- **2026-08-22 (re-verified against the full official rules text, pasted directly from
+  Devpost)** — Confirmed the deadline math (Sep 1, 5am GMT+5 = Aug 31, 5pm PT — same
+  moment). Added facts not previously captured: the **$150 GCP credit request form
+  deadline is Aug 28, 12pm PT** (a real near-term action item); the **Judging Period runs
+  through Oct 1, 2026**, and a hosted URL (if offered) must stay available through then,
+  not just past the submission deadline; the official cost tips recommend **Gemini Flash
+  by default, Pro only for complex reasoning**; and Taskmaster's Innovation criterion
+  explicitly names a **"Bring Your Own Friction" (BYOF)** expectation — the project
+  should read as solving a real, personally-felt friction, not a generic B2B pitch. None
+  of this changes the architecture or scope, but it does change the submission narrative
+  and the near-term action list — see `docs/PHASES.md`.

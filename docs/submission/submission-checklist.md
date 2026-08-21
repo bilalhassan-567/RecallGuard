@@ -4,9 +4,13 @@ Track: **The Taskmaster.** Also state eligibility for Best Architectural Design,
 Multimodal UX, and Individual/Hobbyist in the text description (cross-track bonus prizes,
 not exclusive picks).
 
-**Deadline: August 31, 2026, 5:00 PM PT — hard cutoff, no edits after.** Verified live on
-Devpost 2026-08-22. Submission period (project must be newly created within it): Aug 3–31,
-2026. See `docs/PHASES.md` for the calendar-vs-plan reality check.
+**Deadline: August 31, 2026, 5:00 PM PT** (= Sep 1, 5:00 AM GMT+5/PKT) **— hard cutoff, no
+edits after.** Verified against the full official rules text, 2026-08-22. Submission
+period (project must be newly created within it): Aug 3–31, 2026. **Judging Period runs
+through Oct 1, 2026** (winners announced ~Oct 8) — if we host a live URL, it must stay
+available for testing through Oct 1, not just past the submission deadline. See
+`docs/PHASES.md` for the calendar-vs-plan reality check and the near-term action items
+(notably the $150 GCP credit form, due Aug 28, 12pm PT).
 
 | # | Requirement | Status |
 |---|---|---|

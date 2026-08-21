@@ -160,8 +160,24 @@ work wraps)?
 
 Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
 
+- [ ] **🔴 Request the $150 Google Cloud credit NOW, independent of everything else below.**
+      Verified against the live rules: the credit form deadline is **Aug 28, 2026, 12:00 PM
+      PT — "or while supplies last"** — six days out from today, and separate from the
+      project deadline. Processing takes up to 72 business hours. Requesting this is a
+      2-minute task that should happen today regardless of any other open question.
 - [ ] **Timeline strategy** — see the calendar reality check above; needs an answer before
       Day 1 starts, since it changes how aggressively to cut scope.
+- [ ] **BYOF framing for the Taskmaster Innovation criterion (40% of Stage Two score)** —
+      the live judging rubric explicitly asks whether the team used the "Bring Your Own
+      Friction" mandate to solve a real, *personal* problem, not a generic B2B pitch.
+      RecallGuard as scoped is a restaurant/grocer compliance tool — worth deciding
+      deliberately how (or whether) to frame a personal connection to this problem in the
+      submission narrative, rather than leaving it implicit. See `docs/PLAN.md`.
+- [ ] **Hosting decision** — if we publish a live URL, the rules bind us to keep it
+      available free of charge for testing through the *Judging Period* (ends Oct 1,
+      2026), not just past the submission deadline. Cloud Run's scale-to-zero should make
+      this ~free either way, but worth deciding now rather than discovering the
+      obligation late: host it, or submit on video + repo only?
 - [ ] **GCP project status** — does a GCP project with billing/hackathon credits already
       exist, or does Phase 1 start from zero (account creation, billing link, credit
       redemption)? Changes how long Day 1 actually takes.
