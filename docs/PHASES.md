@@ -8,6 +8,46 @@ started** · **In progress** · **Blocked** · **Done**.
 
 ---
 
+## Timeline reality check (verified 2026-08-22 against live Devpost rules)
+
+**Deadline: August 31, 2026, 5:00 PM PT — hard cutoff.** Today is August 22. That leaves
+**9 full calendar days** (Aug 23–31), and part of Aug 31 itself needs to be reserved for
+actually clicking submit, not building — "submit early" per the plan, not at 4:55pm.
+
+The internal build plan's day-by-day schedule (`docs/PLAN.md`) is written as **10 working
+days**. Mapped onto the real calendar:
+
+| Plan day | Calendar date | Content |
+|---|---|---|
+| Day 1 | Aug 23 | Foundations |
+| Day 2 | Aug 24 | Recall ingestion |
+| Day 3 | Aug 25 | Event backbone |
+| Day 4 | Aug 26 | Invoice ingestion (incl. required multimodal image path) |
+| Day 5–6 | Aug 27–28 | Matching Agent (highest-uncertainty component — the plan's own buffer day lives here) |
+| Day 7 | Aug 29 | Action Agent + artifacts |
+| Day 8 | Aug 30 | Dashboard / UI |
+| Day 9 | Aug 31 (AM) | Run the real N=30 experiment + rehearse the failure-demo beat |
+| Day 10 | Aug 31 (PM) | Demo video, docs polish, submission |
+
+**This does not fit with any slack.** Days 9 and 10 — running a real experiment,
+recording/editing a 4-minute video, and submitting — landing on the same calendar day as a
+5pm hard deadline is a real risk, not a formality. Before Phase 1 starts, this needs one of:
+
+1. More than one plan-day of work per calendar day on at least a few days (i.e. this isn't
+   a "one sitting per day" build), or
+2. The experiment (Day 9) pulled earlier — e.g. run a smaller/partial version once the
+   Matching Agent works (~Aug 28), full N=30 once the pipeline is stable, rather than
+   waiting until the last morning, or
+3. An explicit internal deadline earlier than Aug 31 (e.g. "submit by Aug 30 evening,
+   Aug 31 is buffer only") — the safer pattern, and what the reference build in
+   `docs/master-workout/` (an earlier hackathon) actually did.
+
+**Not yet answered — needed before committing to a day-by-day schedule:** how many hours/
+day are realistically available, and starting when (today, or after Aug 22 documentation
+work wraps)?
+
+---
+
 ## At a glance
 
 | Phase | Status |
@@ -118,4 +158,23 @@ started** · **In progress** · **Blocked** · **Done**.
 
 ## Blockers / open questions
 
-*(none yet — log anything blocking progress here with a date, and clear it when resolved)*
+Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
+
+- [ ] **Timeline strategy** — see the calendar reality check above; needs an answer before
+      Day 1 starts, since it changes how aggressively to cut scope.
+- [ ] **GCP project status** — does a GCP project with billing/hackathon credits already
+      exist, or does Phase 1 start from zero (account creation, billing link, credit
+      redemption)? Changes how long Day 1 actually takes.
+- [ ] **FSIS API key/auth** — not yet confirmed (flagged as a Day-1 risk in the plan
+      itself: "confirm key requirements on Day 1, not Day 8"). Needs checking against
+      `https://www.fsis.usda.gov/science-data/developer-resources` before Phase 2 can start
+      for real; openFDA-only is the fallback if this drags.
+- [ ] **Sample invoice sets (5–10, varied suppliers/formats) + one real photographed
+      invoice** — not yet collected. Explicitly flagged in the plan as "takes longer to
+      assemble well than people expect and gates Days 4–6" — worth starting in parallel
+      with Phase 1, not waiting for Phase 4.
+- [ ] **Frontend framework for the dashboard** — not locked. Plan says "keep it simple," but
+      no concrete choice yet (plain HTML/JS on Cloud Run vs. a framework).
+- [ ] **PDF/doc generation library** for the compliance record — not chosen yet.
+- [ ] **Team size** — building solo? (Individual/Hobbyist prize targeting assumes so; the
+      live rules allow teams of any size with no cap, so worth confirming explicitly.)

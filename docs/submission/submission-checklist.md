@@ -4,6 +4,10 @@ Track: **The Taskmaster.** Also state eligibility for Best Architectural Design,
 Multimodal UX, and Individual/Hobbyist in the text description (cross-track bonus prizes,
 not exclusive picks).
 
+**Deadline: August 31, 2026, 5:00 PM PT — hard cutoff, no edits after.** Verified live on
+Devpost 2026-08-22. Submission period (project must be newly created within it): Aug 3–31,
+2026. See `docs/PHASES.md` for the calendar-vs-plan reality check.
+
 | # | Requirement | Status |
 |---|---|---|
 | 1 | Category selected: The Taskmaster (+ note cross-track eligibility) | Not started |

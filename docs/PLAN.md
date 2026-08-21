@@ -7,6 +7,39 @@ prizes, stated explicitly in the submission text).
 Stack: **Gemini (Vertex AI) + Google ADK + Cloud Run + Firestore + Pub/Sub + Cloud
 Scheduler.**
 
+## Verified live rules (checked directly on Devpost, 2026-08-22)
+
+The internal build plan this was derived from didn't carry an exact deadline. Pulled fresh
+from the official rules page — treat this section, not any earlier estimate, as authoritative:
+
+- **Submission deadline: August 31, 2026, 5:00 PM PT.** Strict cutoff, no edits after.
+- **Submission period: August 3–31, 2026.** The project must be newly created within this
+  window (pre-existing code must be disclosed — not a concern, this repo started fresh).
+- **Category (pick exactly one, mandatory field):** Taskmaster / Collaborative Partner /
+  Fortified Enterprise Fleet. We're selecting **Taskmaster**. Best Architectural Design,
+  Best Multimodal UX, and Individual/Hobbyist are cross-track bonus prizes judged
+  separately, not alternate category picks — mention eligibility for them in the text
+  description, don't try to "select" them.
+- **Mandatory tech (all three required):** Gemini 3.5+ via Gemini API or Vertex AI ✅ ·
+  one of Google ADK / GenAI SDK / Antigravity SDK / GenKit — we use **ADK** ✅ · one of
+  Cloud Run / Cloud SQL / Firestore / GKE / Pub/Sub — we use **Cloud Run + Firestore +
+  Pub/Sub** ✅ (Cloud Scheduler is extra, not itself one of the required five, but doesn't
+  hurt — Firestore/Pub/Sub/Cloud Run already satisfy the requirement).
+- **Judging (Stage Two, 1–5 scale per criterion):**
+  - Innovation & Operational Utility — **40%** ("does the system eliminate real-world
+    friction... high-value autonomous execution over simple chat queries")
+  - Architectural Discipline & Tech Stack — **30%** (decoupling, state management,
+    failure-tolerant design)
+  - Demo & Production Readiness — **30%** (doc clarity + undeniable, unedited proof of
+    execution in the 4-minute video, Google Cloud deployment visibility)
+  - Stage Three: up to **+0.6 bonus points** for blog/podcast, social post, or using
+    additional Google AI models.
+- **Team:** solo entrants explicitly allowed. Hosting a live URL is "highly encouraged,"
+  not strictly mandatory — judges need access to a working project "if available."
+- **Eligibility:** legal age of majority in country of residence; a short list of excluded
+  countries/territories (Italy, Quebec, Crimea, Cuba, Iran, Syria, North Korea, Sudan,
+  Belarus, Russia) — self-verify this isn't a blocker before submitting.
+
 For the full reasoning behind every decision below — including the prize-targeting
 strategy and API research that shaped it — see the internal build plan (not tracked in
 this repo). This file is the living, public version: what we're building and why, kept in
@@ -169,3 +202,9 @@ sections above.)*
 
 - **2026-08-22** — Initial public plan written, derived from the locked internal build
   plan. No revisions yet — this is the starting spec.
+- **2026-08-22 (same day)** — Added the "Verified live rules" section above after
+  fetching the actual Devpost rules page. Corrected the judging-weight framing (it's a
+  three-way 40/30/30 split, not a two-way 40/60) and pinned down the real deadline
+  (Aug 31, 2026, 5pm PT) and category-selection mechanics, none of which were locked in
+  the internal plan. **This changes the day-by-day schedule's feasibility** — see
+  `docs/PHASES.md` for the calendar reality check.
