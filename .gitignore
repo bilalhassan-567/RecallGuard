@@ -1,0 +1,51 @@
+# --- Internal / never-upload material -----------------------------------
+# Raw planning docs, prize/strategy notes, unpolished design mockups.
+# Public-facing docs live in docs/ (tracked); this stays local only.
+docs/master-workout/
+
+# Agent rules/instructions file for this repo — internal, not for judges.
+CLAUDE.md
+
+# --- Secrets ---------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.key
+*serviceaccount*.json
+*credentials*.json
+
+# --- Python ------------------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Node (frontend, if/when added) ----------------------------------------
+node_modules/
+dist/
+build/
+.next/
+.vite/
+
+# --- Logs / local data -------------------------------------------------
+logs/
+*.log
+*.sqlite
+*.sqlite3
+.firebase/
+firebase-debug.log
+
+# --- IDE / OS ------------------------------------------------------------
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- Scratch -------------------------------------------------------------
+scratchpad/
+*.tmp
