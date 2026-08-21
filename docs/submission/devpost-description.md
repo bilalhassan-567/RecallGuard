@@ -13,6 +13,20 @@ RecallGuard watches FDA and USDA food recall feeds, matches them against a busin
 invoices with Gemini, and drafts the pull-checklist, notification, and compliance record —
 flagging anything it isn't sure about instead of guessing.
 
+## Inspiration
+
+**Guidance for whoever writes the final version (decided 2026-08-22, see `docs/PLAN.md`
+→ BYOF):** no fabricated personal backstory. There's no direct personal food-service
+experience behind this build, and claiming otherwise is both risky (Devpost's rules
+disqualify false information about the submission) and unconvincing under a follow-up
+question. Write this section honestly around the *real, demonstrable gap*: small
+restaurants and independent grocers get the same recall notices as chains with entire
+compliance teams, but have no realistic way to check every invoice line against every
+recall bulletin by hand — a genuinely messy, real operational chore, backed by the
+$74.7B/year foodborne-illness cost figure (USDA Economic Research Service), not an
+invented anecdote. Let the *execution* — a real multi-step background workflow completed
+without hand-holding — carry the Innovation score, not a backstory.
+
 ## What it does
 
 RecallGuard runs three agents against real recall data:

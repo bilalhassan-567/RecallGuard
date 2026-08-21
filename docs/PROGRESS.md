@@ -58,3 +58,20 @@ submission-checklist.md`, and `docs/RISK_REGISTER.md`:
   friction. Flagged as an open framing decision, not yet resolved.
 No architecture or scope changes — this was a documentation-accuracy pass, plus new
 near-term action items surfaced.
+
+## 2026-08-22 — Three open decisions resolved
+
+- **BYOF framing:** no personal food-service background exists — decided not to fabricate
+  one. The submission narrative frames the problem honestly (a real gap small food
+  businesses have, backed by the $74.7B/year foodborne-illness stat) and leans on the
+  autonomous multi-step workflow half of the Innovation criterion instead. Added an
+  `Inspiration` section with this guidance to `docs/submission/devpost-description.md`.
+- **Hosting:** will host a live demo. Decided against splitting the deploy onto Vercel —
+  the dashboard frontend goes on Cloud Run alongside the agents, so there's one platform,
+  one Google Cloud story for the video, and no second integration surface to debug under
+  time pressure. Cloud Run's scale-to-zero makes this ~free either way.
+- **GCP status confirmed: starting from zero.** No project, no billing, no local `gcloud`
+  CLI (checked — not on PATH). The $150 hackathon credit hasn't been requested yet; that's
+  now the single most time-sensitive action item (form deadline Aug 28, 12pm PT, and it's
+  a step only the user can do — tied to their own Google identity). Flagged as the very
+  first action, ahead of any other Phase 1 work.

@@ -160,27 +160,28 @@ work wraps)?
 
 Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
 
-- [ ] **🔴 Request the $150 Google Cloud credit NOW, independent of everything else below.**
-      Verified against the live rules: the credit form deadline is **Aug 28, 2026, 12:00 PM
-      PT — "or while supplies last"** — six days out from today, and separate from the
-      project deadline. Processing takes up to 72 business hours. Requesting this is a
-      2-minute task that should happen today regardless of any other open question.
+- [ ] **🔴 ACTION FOR YOU, TODAY — request the $150 Google Cloud credit.** This has to be
+      done by you personally (the form ties to your own Google identity) — I can't submit
+      it on your behalf. Form: `https://forms.gle/riGhgDSHkHeMx8Ca6`. Deadline **Aug 28,
+      2026, 12:00 PM PT — "or while supplies last"** — six days out, separate from the
+      project deadline, ~72 business hours to process. Do this before anything else today.
+- [x] **BYOF framing** — decided 2026-08-22: no fabricated personal backstory (risks the
+      false-information disqualification clause and doesn't hold up under scrutiny
+      anyway). Frame honestly around the real operational gap instead, and let the
+      autonomous-workflow half of the Innovation criterion carry the score. See
+      `docs/PLAN.md` and `docs/submission/devpost-description.md` → Inspiration.
+- [x] **Hosting decision** — decided 2026-08-22: host it, and host the dashboard frontend
+      on **Cloud Run**, not Vercel — keeps one platform, one story for the "visible Google
+      Cloud deployment" judging criterion, and avoids a second integration surface under
+      a 9-day clock. Full reasoning in `docs/PLAN.md`.
+- [ ] **GCP project status — confirmed starting from zero (2026-08-22).** No project, no
+      billing, no `gcloud` CLI installed locally (checked). Phase 1 Day 1 needs to budget
+      real time for: account/project creation, billing link, the $150 credit landing,
+      installing `gcloud` (or working from Cloud Shell instead), and enabling the Vertex
+      AI / Firestore / Pub/Sub / Cloud Run / Cloud Scheduler APIs.
 - [ ] **Timeline strategy** — see the calendar reality check above; needs an answer before
-      Day 1 starts, since it changes how aggressively to cut scope.
-- [ ] **BYOF framing for the Taskmaster Innovation criterion (40% of Stage Two score)** —
-      the live judging rubric explicitly asks whether the team used the "Bring Your Own
-      Friction" mandate to solve a real, *personal* problem, not a generic B2B pitch.
-      RecallGuard as scoped is a restaurant/grocer compliance tool — worth deciding
-      deliberately how (or whether) to frame a personal connection to this problem in the
-      submission narrative, rather than leaving it implicit. See `docs/PLAN.md`.
-- [ ] **Hosting decision** — if we publish a live URL, the rules bind us to keep it
-      available free of charge for testing through the *Judging Period* (ends Oct 1,
-      2026), not just past the submission deadline. Cloud Run's scale-to-zero should make
-      this ~free either way, but worth deciding now rather than discovering the
-      obligation late: host it, or submit on video + repo only?
-- [ ] **GCP project status** — does a GCP project with billing/hackathon credits already
-      exist, or does Phase 1 start from zero (account creation, billing link, credit
-      redemption)? Changes how long Day 1 actually takes.
+      Day 1 starts, since it changes how aggressively to cut scope. Starting from a
+      zero GCP setup (just confirmed above) makes this more pressing, not less.
 - [ ] **FSIS API key/auth** — not yet confirmed (flagged as a Day-1 risk in the plan
       itself: "confirm key requirements on Day 1, not Day 8"). Needs checking against
       `https://www.fsis.usda.gov/science-data/developer-resources` before Phase 2 can start

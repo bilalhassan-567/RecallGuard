@@ -48,8 +48,20 @@ or elsewhere are superseded by it.
     the 'Bring Your Own Friction' (BYOF) mandate to solve a unique, personal problem?"*
     **BYOF is new information, not in the internal plan** — Taskmaster is explicitly
     scored partly on whether this solves a real friction *the builder personally has*,
-    not a generic B2B pitch. Worth deciding deliberately how to frame this in the
-    submission narrative (see open questions).
+    not a generic B2B pitch.
+    **Decided 2026-08-22:** no personal food-service/compliance background exists here —
+    do not fabricate one (a false claim risks the "false information" disqualification
+    clause and reads as hollow to judges regardless). Instead, frame it honestly around
+    a **real, demonstrated operational gap**: small restaurants and independent grocers
+    have no realistic way to check every invoice line against every recall bulletin by
+    hand — that's a genuinely messy, real chore that exists in the world (backed by the
+    $74.7B/year foodborne-illness cost stat), not an invented anecdote. Then put the
+    weight of the Innovation score on the *other* half of the same criterion, which is
+    fully within engineering control: **"does the agent successfully intercept and
+    complete a multi-step background workflow without human intervention."** That's a
+    demo-able, provable claim — the honest and higher-EV bet versus a backstory that
+    doesn't hold up under a follow-up question. See the `Inspiration` guidance in
+    `docs/submission/devpost-description.md`.
   - **Architectural Discipline & Tech Stack — 30%.** The rules' text for this criterion
     is written per-track under alternate track names still in the page copy — the
     Taskmaster-mapped language ("Continuous Action Engine") asks: *"a clean, modularized,
@@ -70,6 +82,16 @@ or elsewhere are superseded by it.
   URL is provided, judges evaluate from video + text + repo only, no live obligation.
   Cloud Run's scale-to-zero means "available but idle" through Oct 1 should cost close to
   nothing either way, so hosting is low-risk to offer.
+  **Decided 2026-08-22: host it, and host the dashboard frontend on Cloud Run too, not
+  Vercel.** Vercel was considered (it's free and fast for a static/Next.js frontend), but
+  two hard requirements point against splitting the deploy: (1) the "Demo & Production
+  Readiness" criterion explicitly wants *visible proof of Google Cloud deployment in the
+  video* — a Vercel-hosted frontend dilutes that story even though the backend agents
+  would still satisfy the mandatory-tech requirement on their own; (2) a second platform
+  means a second set of env vars, CORS/auth config, and a second thing that can break,
+  which is real risk on a 9-day clock. Cloud Run's free tier + scale-to-zero already
+  costs effectively nothing at this scale, so there's no cost upside to splitting either.
+  One platform, one dashboard, one story for the camera.
 - **Eligibility:** legal age of majority in country of residence; a short list of excluded
   countries/territories (Italy, Quebec, Crimea, Cuba, Iran, Syria, North Korea, Sudan,
   Belarus, Russia) — self-verify this isn't a blocker before submitting.
