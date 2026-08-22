@@ -92,8 +92,11 @@ near-term action items surfaced.
 - First support reply (agent "Rea") was a generic canned response pointing to the list of
   supported card networks — didn't address the manual-verification request. Sent a
   follow-up pointing out SadaPay's card **is** on that supported-network list (Mastercard
-  debit), so the block is issuer-specific, and re-asked for manual verification. Awaiting
-  reply (48h stated response time).
+  debit), so the block is issuer-specific, and re-asked for manual verification.
+- **Update:** second reply confirms it's been escalated to Google's internal team for
+  investigation — real progress, not another canned response. New estimate: 1–3 business
+  days. That lands ~Aug 25–26, eating a meaningful chunk of the 9-day window — reinforces
+  not waiting idle on this (see below).
 - **Decision: don't let this block all progress.** Set up the Gemini API path via Google
   AI Studio (no billing account required) so agent/prompt development can proceed
   regardless of how the billing ticket resolves — see the next entry.
