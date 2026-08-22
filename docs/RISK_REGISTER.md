@@ -3,7 +3,7 @@
 | Risk | Mitigation |
 |---|---|
 | No dramatic live recall during build week | Seed with real historical recalls; also show one live poll against the current feed for authenticity, clearly labeled |
-| FSIS API auth/access friction | Confirm key requirements on Day 1, not late; openFDA as fallback primary source if FSIS access is delayed |
+| FSIS API access — **not an auth issue after all, but a possible IP-block issue** (found 2026-08-22): the endpoint needs no API key (confirmed via real working reference code), but it's behind Akamai bot-management that blocked every request from the dev sandbox (403, regardless of User-Agent) while openFDA worked fine. Untested yet whether this is sandbox-specific or would also hit Cloud Run's IP ranges in production. | Test from the user's own machine first (in progress); if it also fails there, or later fails from Cloud Run specifically, fall back to openFDA as the sole trigger source — same mitigation the plan already names, just a different root cause than expected |
 | openFDA query gotchas eat build time | Budget explicit debugging time early; use the quoting/`.exact`/date-window fixes documented in `docs/PLAN.md` up front |
 | Matching accuracy underwhelms | Curate invoice sample diversity deliberately so the demo has at least 2–3 clean true-positive catches |
 | Judges perceive "just an API wrapper" | Emphasize the reasoning/confidence output and the human-review exception path on camera — that's the non-automatable part |

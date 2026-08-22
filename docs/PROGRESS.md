@@ -121,5 +121,53 @@ Built out `agents/` so Phase 1 agent work can start today without GCP billing:
 - **Confirmed working (2026-08-22):** user generated an AI Studio key, `python
   test_gemini.py` returned a clean response from `gemini-3.5-flash` with real prompt/
   response token counts. Model ID confirmed correct on the first try. Gemini path is
-  fully unblocked regardless of the GCP billing ticket's outcome. Next: `adk run
-  hello_agent` to confirm the ADK CLI layer, then start Phase 2 (FSIS/openFDA ingestion).
+  fully unblocked regardless of the GCP billing ticket's outcome.
+- **Also confirmed (2026-08-22):** `adk run hello_agent` works through the real ADK CLI,
+  not just the raw SDK — agent loaded, responded correctly to a live prompt. (The agent's
+  reply claimed "Gemini 2.5 Flash" — that's the model unreliably self-reporting its own
+  name in prose, not authoritative; the real config is `test_gemini.py`'s printed model
+  ID, confirmed by a successful API call.) **Phase 1 local scaffolding is done** — only
+  "deployed to Cloud Run" remains, pending the GCP billing ticket.
+
+## 2026-08-22 — Phase 2: recall ingestion clients built and (partly) verified
+
+Researched the two open questions from the plan's risk list — FSIS auth requirements and
+the openFDA query gotchas — by finding real, working reference implementations on GitHub
+(`justanesta/food_safety_recalls`, `leelesemann-sys/food-recalls-database`) rather than
+relying on docs alone, since the FSIS docs page itself was unreachable (Akamai-blocked,
+see below).
+
+**FSIS:** confirmed no API key is required — the reference repos call it anonymously with
+just a `User-Agent` header. This resolves the original "confirm auth requirements" risk.
+**But a new, more interesting problem surfaced:** every request from this dev sandbox got
+403'd by Akamai bot-management, regardless of User-Agent (tried a browser UA and
+`curl/7.88`, both failed identically) — while the *exact same test* against openFDA
+succeeded cleanly. Pulled a real sample FSIS record from one repo's committed dataset
+(`raw_data/usda_food_safety_recalls.json`) via a byte-range request to get exact field
+names without needing the live API to work. Built `agents/ingestion/fsis_client.py`
+matching the working reference pattern (90s timeout, retry with backoff, `curl/7.88`
+User-Agent) — correct code, but **unverified from a real network yet**. Open question:
+is this sandbox-specific, or would Cloud Run's IPs (also a "datacenter" ASN) hit the same
+wall in production? Logged in `docs/RISK_REGISTER.md` and `docs/PHASES.md` as the next
+thing to test — starting with the user's own machine.
+
+**openFDA:** built `agents/ingestion/openfda_client.py`, tested live, works end-to-end —
+36 real records fetched and normalized for an August 2026 date window. Found and fixed a
+real bug in the process: `requests`' automatic URL-encoding was turning the literal `+`
+in openFDA's `report_date:[X+TO+Y]` Lucene-style range syntax into `%2B`, which the API
+rejected with a 500. Fixed by building the query string manually instead of passing it
+through `params=`. (The plan's documented quoting/`.exact` gotchas were already known;
+this encoding issue was a new one, only visible by actually running the code.)
+
+**Normalization:** built `agents/ingestion/normalize.py` mapping both sources into the
+`recalls/{recallId}` shape from `docs/DATA_MODEL.md`, using real field names pulled from
+actual sample data (not guessed) — `field_recall_number`/`field_title`/etc. for FSIS,
+`recall_number`/`product_description`/etc. for openFDA. Fixed a messiness bug here too:
+openFDA's `distribution_pattern` field often carries a boilerplate sentence prefix
+("The recalled product was distributed to the following states: MD, VA") — now stripped
+before splitting into a states list, verified against live data (`["MD", "VA"]` clean).
+
+**Not yet done:** unit tests against known historical recalls (the current smoke test
+just proves the code runs, not that it's correct against ground truth) — deferred to
+align with the N=30 ground-truth work in `docs/EXPERIMENT.md`, Phase 8. Firestore
+writes not wired up yet (blocked on GCP project/billing, same as Phase 1's deploy step).

@@ -54,7 +54,7 @@ work wraps)?
 |---|---|
 | 0 — Documentation & repo scaffolding | In progress |
 | 1 — Foundations (GCP, ADK hello-world, Firestore schema) | Not started |
-| 2 — Recall ingestion (FSIS + openFDA) | Not started |
+| 2 — Recall ingestion (FSIS + openFDA) | In progress |
 | 3 — Event backbone (Pub/Sub + Scheduler) | Not started |
 | 4 — Invoice ingestion (CSV + multimodal image) | Not started |
 | 5 — Matching Agent (Gemini reasoning + confidence routing) | Not started |
@@ -88,10 +88,27 @@ work wraps)?
 
 ## Phase 2 — Recall ingestion
 
-- [ ] FSIS API client + confirmed auth/key requirements
-- [ ] openFDA client — quoting (`classification:"Class+I"`), `.exact` aggregation, date-window pagination (avoid pre-2012-06-20 404 trap)
-- [ ] Both sources normalized into `recalls/{recallId}` schema
-- [ ] Unit tests against a handful of known historical recalls
+- [x] **FSIS auth confirmed: no API key needed** (2026-08-22) — verified against real
+      working reference implementations on GitHub, not just docs. Client built
+      (`agents/ingestion/fsis_client.py`) but **untested from a real network** — the dev
+      sandbox is blocked by Akamai bot-management (403, same for browser and `curl` UAs),
+      while openFDA hit the same way works fine. Needs a run from a normal machine to
+      confirm this is sandbox-specific, not a broader block. **See the 🔴 item in
+      Blockers below — this could matter again once we're on Cloud Run.**
+- [x] **openFDA client built and verified end-to-end** (`agents/ingestion/
+      openfda_client.py`) — real request against live data, 36 records fetched and
+      normalized correctly. Found and fixed a real bug along the way: `requests`'
+      automatic URL-encoding turned openFDA's literal `+` (in `report_date:[X+TO+Y]`)
+      into `%2B`, breaking the query (500 from the API) — fixed by building the query
+      string manually instead of passing it through `params=`.
+- [x] Both sources normalized into the `recalls/{recallId}` shape from `docs/DATA_MODEL.md`
+      (`agents/ingestion/normalize.py`) — real field names pulled from an actual FSIS
+      sample record and a live openFDA response, not guessed. Fixed a messiness bug in
+      `distributionStates` parsing along the way (openFDA prefixes it with a boilerplate
+      sentence; now stripped before splitting).
+- [ ] Unit tests against a handful of known historical recalls — not yet written; the
+      smoke test (`agents/ingestion/test_ingestion.py`) covers "does it run," not
+      correctness against known cases.
 
 ## Phase 3 — Event backbone
 
@@ -198,10 +215,17 @@ Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
 - [ ] **Timeline strategy** — see the calendar reality check above; needs an answer before
       Day 1 starts, since it changes how aggressively to cut scope. Starting from a
       zero GCP setup (just confirmed above) makes this more pressing, not less.
-- [ ] **FSIS API key/auth** — not yet confirmed (flagged as a Day-1 risk in the plan
-      itself: "confirm key requirements on Day 1, not Day 8"). Needs checking against
-      `https://www.fsis.usda.gov/science-data/developer-resources` before Phase 2 can start
-      for real; openFDA-only is the fallback if this drags.
+- [ ] **🔴 FSIS reachability — resolved "no key needed," but a NEW risk surfaced
+      (2026-08-22).** The API is anonymous (confirmed via real working code, not just
+      docs), but it's behind Akamai bot-management that 403'd every request from the dev
+      sandbox regardless of headers, while openFDA worked fine the same way. This could
+      be sandbox-specific — **needs testing from the user's own machine as the next
+      step** — but if Google's own Cloud Run IP ranges get flagged the same way (both are
+      "datacenter" ASNs from Akamai's perspective), the Recall Monitor agent could hit
+      this in production too, not just in dev. Mitigation already exists in the plan:
+      openFDA becomes the sole trigger source if so (see `docs/RISK_REGISTER.md`) — real
+      degradation, not a fatal blocker, but needs confirming either way before Day 2 is
+      considered actually done.
 - [ ] **Sample invoice sets (5–10, varied suppliers/formats) + one real photographed
       invoice** — not yet collected. Explicitly flagged in the plan as "takes longer to
       assemble well than people expect and gates Days 4–6" — worth starting in parallel

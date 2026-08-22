@@ -43,8 +43,12 @@ firebase-debug.log
 # --- IDE / OS ------------------------------------------------------------
 .idea/
 .vscode/
+.claude/settings.local.json
 .DS_Store
 Thumbs.db
+
+# --- ADK runtime state (created by `adk run`/`adk web`, not source) --------
+.adk/
 
 # --- Scratch -------------------------------------------------------------
 scratchpad/
