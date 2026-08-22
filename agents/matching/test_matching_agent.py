@@ -4,7 +4,7 @@ real Gemini calls) and is non-deterministic by nature (LLM output) — asserts o
 routing OUTCOME (auto_actioned / pending_review / rejected), not exact confidence numbers
 or exact wording, since those can legitimately vary run to run while still being correct.
 
-Run: python -m unittest test_agent -v
+Run: python -m unittest test_matching_agent -v
 """
 import sys
 import unittest
@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # agents/
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "ingestion"))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "invoices"))
 
-import agent as matching_agent  # noqa: E402  (path setup must run first)
+import matching_agent  # noqa: E402  (path setup must run first)
 import csv_parser  # noqa: E402
 import normalize  # noqa: E402
 import openfda_client  # noqa: E402

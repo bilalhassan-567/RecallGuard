@@ -248,3 +248,51 @@ back. Built the whole local chain in one push — ingestion (already done) -> lo
   requirement, still Phase 4), a Cloud Run region choice for the eventual FSIS re-test,
   and scaling the sample/ground-truth set from 5 invoices toward the N=30 needed for
   Phase 8's real experiment.
+
+## 2026-08-23 — Action Agent built, secured, and run end-to-end (Phase 6 done, local)
+
+User's instruction: build it now, make it secure, then review. Built
+`agents/action/action_agent.py` + `pdf_export.py` with security as a first-class design
+constraint, not an afterthought:
+
+- **No LLM call anywhere in this module.** Everything downstream of a confirmed match —
+  the pull checklist, both notification drafts, the compliance record — is deterministic
+  templating over structured data the Matching Agent already produced. This is a security
+  decision, not a shortcut: a compliance document has nowhere for prompt injection to
+  land if there's no prompt. The one LLM call in the whole pipeline stays isolated to the
+  Matching Agent, where reasoning is actually needed.
+- **Structural refusal, not just caller discipline.** `run_action_agent` re-checks
+  `match["status"] == "auto_actioned"` itself and raises `ValueError` on anything else —
+  so a bug upstream that calls this on a `pending_review` match fails loudly here instead
+  of silently drafting on an unconfirmed match.
+- **No send capability exists in the code, verifiably.** Wrote a test that parses the
+  module's actual AST and asserts none of its imports are network/send-capable
+  (`smtplib`, `requests`, `socket`, etc.) — not just a comment promising this, a test that
+  would fail if someone added one later. Every notification is a draft file labeled
+  `DRAFT — NOT SENT`.
+- **Filenames sanitized, external text escaped.** `_safe_filename` strips everything but
+  alphanumerics/dash/underscore before it ever touches a file path (tested against a
+  path-traversal string). All recall/invoice/reasoning text is escaped via
+  `xml.sax.saxutils.escape` before reaching reportlab's `Paragraph`, which otherwise
+  interprets a subset of markup tags in its input.
+- **PDF chosen deliberately: `reportlab`** — pure Python, no external system binary
+  dependency (ruled out `weasyprint`, which needs Pango/cairo installed separately) —
+  fewer moving parts to break under time pressure, smaller supply-chain surface.
+- **9 tests, all passing** — the refusal behavior, checklist/draft content, the AST
+  import check, filename sanitization, and a full end-to-end run asserting a real PDF
+  gets written and the compliance log is correct.
+- **Ran the whole pipeline live** (extended `run_matching_demo.py`): both real
+  true-positive matches (chips, cottage cheese) flowed all the way through to actual
+  compliance PDFs. **Read one of the generated PDFs back and visually verified it** —
+  clean, plain, tabular, zero Scout branding, exactly matching the brand guide's rule
+  that this is the one artifact a health inspector reads and needs to look serious.
+- **Found and fixed a real bug:** `matching/agent.py` and the new `action/agent.py` had
+  the same filename. The flat sibling-import pattern used throughout this codebase (each
+  subpackage assumes it's the only thing on `sys.path`) silently breaks the moment two
+  same-named files are both importable at once — `import agent` the second time just
+  returns the first module from `sys.modules`, not an error, so it fails silently rather
+  than loudly. Renamed both to `matching_agent.py`/`action_agent.py` and updated every
+  reference (including in the git-tracked matching files, via `git mv` to preserve
+  history). Worth remembering if more subpackages get added later.
+- Also fixed two cosmetic em-dash/Windows-console-encoding mojibake issues in print
+  statements — harmless but would look unpolished in a demo recording.

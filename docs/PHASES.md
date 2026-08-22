@@ -58,7 +58,7 @@ work wraps)?
 | 3 — Event backbone (Pub/Sub + Scheduler) | Not started |
 | 4 — Invoice ingestion (CSV + multimodal image) | In progress (CSV done, image not started) |
 | 5 — Matching Agent (Gemini reasoning + confidence routing) | Core logic done, validated |
-| 6 — Action Agent + artifacts (checklist/notification/compliance PDF) | Not started |
+| 6 — Action Agent + artifacts (checklist/notification/compliance PDF) | Done (local) |
 | 7 — Dashboard / UI (Scout corkboard) | Not started |
 | 8 — Quantitative experiment (N=30 baseline vs agent) | Not started |
 | 9 — Failure-injection rehearsal + Architectural Design checklist | Not started |
@@ -160,10 +160,34 @@ work wraps)?
 
 ## Phase 6 — Action Agent + artifacts
 
-- [ ] Pull-checklist generation
-- [ ] Notification draft (supplier + health dept template — draft only, never sent)
-- [ ] Compliance record (serious, plain, paw-print-free) + PDF export
-- [ ] `compliance_log` written
+- [x] **Pull-checklist generation** (2026-08-23) — `agents/action/action_agent.py`.
+      Includes a keyword-based storage-location hint (dairy/meat/produce/dry storage)
+      as a small deterministic convenience, not another LLM call.
+- [x] **Notification drafts** (supplier + health dept) — every draft is explicitly
+      labeled `DRAFT — NOT SENT`, and there is no send-capable code in the module at all
+      (no smtplib/requests/socket — verified by an AST-parsing test, not just a promise).
+      Matches the plan's deliberate MVP scope cut: draft-only, on purpose.
+- [x] **Compliance record + PDF export** — `agents/action/pdf_export.py` (reportlab).
+      Visually verified: plain, serious, tabular — no Scout branding, matching the brand
+      guide's explicit rule that this is the one document a health inspector reads.
+- [x] `compliance_log` written to the local Firestore stand-in
+      (`businesses/{id}/compliance_log/{matchId}`).
+- **Security design (see the docstring at the top of `action_agent.py`):** no LLM call
+  happens anywhere in this module — everything is deterministic templating over data the
+  Matching Agent already produced, which removes prompt-injection as a concern for this
+  stage entirely (there's no prompt to inject into). `run_action_agent` structurally
+  refuses to run on anything but a confirmed `auto_actioned` match — enforced in code, not
+  just caller discipline — and all external text is escaped before reaching the PDF
+  renderer. 9 tests passing, including a real path-traversal filename test and the AST
+  import check.
+- **Ran the full pipeline live** (`agents/run_matching_demo.py`, extended this session):
+  ingestion → matching → action, end to end, on real recall data. Both true-positive
+  matches produced real compliance PDFs, checklists, and drafts.
+- **Found and fixed a real bug along the way:** `agents/matching/agent.py` and
+  `agents/action/agent.py` shared the same filename, which silently broke the flat
+  sibling-import pattern used everywhere else (`import agent` returned whichever module
+  got imported first, not the intended one) the moment both subpackages were on
+  `sys.path` at once. Renamed both to `matching_agent.py` / `action_agent.py`.
 
 ## Phase 7 — Dashboard / UI ("Scout" corkboard)
 

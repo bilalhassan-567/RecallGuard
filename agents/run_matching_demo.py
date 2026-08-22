@@ -1,32 +1,34 @@
 """End-to-end local demo: fetch two real recalls -> parse all 5 sample invoices -> run
-the Matching Agent -> print routing decisions and Scout's reasoning for each line,
-checked informally against agents/sample_data/invoices/ground_truth.json.
+the Matching Agent -> run the Action Agent on anything auto-actioned (real checklist,
+notification drafts, and a compliance PDF) -> print everything, checked informally
+against agents/sample_data/invoices/ground_truth.json.
 
-This is the first full pipeline run (ingestion -> normalize -> parse -> match), all
-local, no GCP needed. Run from agents/: python run_matching_demo.py
+This is the full pipeline (ingestion -> normalize -> parse -> match -> act), all local,
+no GCP needed. Run from agents/: python run_matching_demo.py
 
-Note on structure: each subpackage (ingestion/, invoices/, matching/) uses flat sibling
-imports internally (e.g. `import normalize`, not `from . import normalize`), matching how
-they're run standalone (`cd ingestion && python test_ingestion.py`). This script adds
-each subdirectory to sys.path to make that work from one place — a real package
-restructure (proper relative imports) is reasonable future cleanup, not urgent given the
-deadline.
+Note on structure: each subpackage (ingestion/, invoices/, matching/, action/) uses flat
+sibling imports internally (e.g. `import normalize`, not `from . import normalize`),
+matching how they're run standalone (`cd ingestion && python test_ingestion.py`). This
+script adds each subdirectory to sys.path to make that work from one place. matching_agent
+and action_agent are named to avoid a real collision that existed earlier when both
+subpackages had a same-named agent.py — see docs/PROGRESS.md, 2026-08-23.
 """
-import json
 import sys
 from pathlib import Path
 
 AGENTS_DIR = Path(__file__).resolve().parent
-for sub in ("ingestion", "invoices", "matching"):
+for sub in ("ingestion", "invoices", "matching", "action"):
     sys.path.insert(0, str(AGENTS_DIR / sub))
 
-import agent as matching_agent  # matching/agent.py
-import csv_parser
-import normalize
-import openfda_client
+import action_agent  # noqa: E402  (path setup must run first)
+import csv_parser  # noqa: E402
+import matching_agent  # noqa: E402
+import normalize  # noqa: E402
+import openfda_client  # noqa: E402
 
 KNOWN_RECALLS = ["H-0552-2026", "H-1219-2026"]
 INVOICE_DIR = AGENTS_DIR / "sample_data" / "invoices"
+DEMO_BUSINESS = {"id": "demo-biz-1", "name": "Maple & Vine Kitchen", "address": "12 Main St, Springfield"}
 
 
 def main() -> None:
@@ -49,7 +51,6 @@ def main() -> None:
         print(f"Classification: {recall['classification']} | Hazard: {recall['hazardType'][:80]}")
         print("=" * 70)
         matches = matching_agent.match_recall_against_lines(recall, all_lines)
-        # Only show lines Scout considered worth a real score, sorted highest first.
         matches.sort(key=lambda m: m["confidenceScore"], reverse=True)
         for m in matches:
             if m["confidenceScore"] < 15:  # skip the obviously-irrelevant bulk for readability
@@ -58,9 +59,15 @@ def main() -> None:
             print(f"\n  [{m['status'].upper()}] {m['confidenceScore']}% - {line['rawText']!r}")
             print(f"    supplier: {line['supplier']}")
             print(f"    Scout: {m['reasoning']}")
+
+            if m["status"] == "auto_actioned":
+                result = action_agent.run_action_agent(m, recall, DEMO_BUSINESS)
+                print(f"    -> Action Agent ran: PDF at {result['compliancePdfPath']}")
+                print(f"    -> Storage hint: {result['checklist']['storageHint']}")
         print()
 
 
 if __name__ == "__main__":
     main()
     print("\nCompare against agents/sample_data/invoices/ground_truth.json expectations.")
+    print("Generated PDFs are in agents/local_data/artifacts/ (gitignored, not committed).")
