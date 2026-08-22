@@ -56,8 +56,8 @@ work wraps)?
 | 1 — Foundations (GCP, ADK hello-world, Firestore schema) | Not started |
 | 2 — Recall ingestion (FSIS + openFDA) | Done (openFDA-only; FSIS deferred, see notes) |
 | 3 — Event backbone (Pub/Sub + Scheduler) | Not started |
-| 4 — Invoice ingestion (CSV + multimodal image) | Not started |
-| 5 — Matching Agent (Gemini reasoning + confidence routing) | Not started |
+| 4 — Invoice ingestion (CSV + multimodal image) | In progress (CSV done, image not started) |
+| 5 — Matching Agent (Gemini reasoning + confidence routing) | Core logic done, validated |
 | 6 — Action Agent + artifacts (checklist/notification/compliance PDF) | Not started |
 | 7 — Dashboard / UI (Scout corkboard) | Not started |
 | 8 — Quantitative experiment (N=30 baseline vs agent) | Not started |
@@ -122,15 +122,41 @@ work wraps)?
 
 ## Phase 4 — Invoice ingestion
 
-- [ ] CSV upload → parsed `rawLineItems`
-- [ ] 5–10 realistic sample invoice sets built (different suppliers/formats/abbreviations)
-- [ ] **Photographed/scanned invoice via Gemini multimodal — required scope, not stretch** (Best Multimodal UX target)
+- [x] **CSV upload → parsed `rawLineItems`** (2026-08-23) — `agents/invoices/csv_parser.py`,
+      handles 5 genuinely different column layouts via a known-alias lookup rather than
+      assuming one schema (real invoices don't share a format). 7 tests passing.
+- [x] **5 realistic sample invoice sets built** (`agents/sample_data/invoices/`) — Sysco,
+      US Foods, a local distributor, a wholesale club, and Restaurant Depot styles.
+      Deliberately covers all four evaluation categories up front: 2 true positives
+      (anchored on real recalls), 1 near-miss true negative (same brand, wrong flavor —
+      tests false-positive avoidance), 1 easy true negative, 1 genuinely ambiguous case
+      (no lot code — tests the "don't guess" behavior). Ground truth documented in
+      `ground_truth.json`. Room to grow toward 10 later; this set already exercises every
+      behavior the plan calls out.
+- [ ] **Photographed/scanned invoice via Gemini multimodal — required scope, not stretch**
+      (Best Multimodal UX target) — not started yet.
 
 ## Phase 5 — Matching Agent
 
-- [ ] Gemini prompt: confidence (0–100) + one-sentence reasoning, structured JSON output
-- [ ] Confidence-threshold routing (≥80 auto-actioned, 40–79 pending review, <40 discarded+logged)
-- [ ] N=30 ground-truth labeled set built early (feeds Phase 8)
+- [x] **Gemini prompt + structured JSON output — built and validated live (2026-08-23).**
+      `agents/matching/agent.py`. Uses `google-genai`'s Pydantic-based `response_schema`
+      for reliable structured output (confidence 0-100 + reasoning per line), not
+      hand-parsed text. Reasoning is written in Scout's first-person voice per the brand
+      guide (matches the `02_case_file_review.html` mockup's actual copy style), since
+      it's shown directly in the review UI, not post-processed. Recall/invoice text
+      passed as data, never instructions (prompt-injection guard).
+- [x] **Confidence-threshold routing** (≥80 auto_actioned, 40-79 pending_review, <40
+      rejected-but-logged) — implemented and live-tested against real recalls + the
+      sample invoice set. **All 3 automated tests pass** (`agents/matching/test_agent.py`,
+      live Gemini calls): the true positive (heavily abbreviated) correctly
+      auto-actioned at 95%; the near-miss (same brand, wrong flavor) correctly did NOT
+      auto-action despite brand-name similarity — the exact false-positive trap this
+      needed to avoid; unrelated products correctly rejected. The ambiguous no-lot-code
+      case correctly routed to `pending_review` at 55%, with Scout's stated reasoning
+      explicitly naming the missing brand/lot info as the reason — exactly the "don't
+      guess" behavior the plan designs for.
+- [ ] N=30 ground-truth labeled set built early (feeds Phase 8) — the 5-invoice set above
+      is a real start but not yet at N=30 scale.
 
 ## Phase 6 — Action Agent + artifacts
 

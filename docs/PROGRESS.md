@@ -200,3 +200,51 @@ window, so they stay stable over time — values match what was manually verifie
 earlier in the session. Added `openfda_client.fetch_by_recall_number()` to support this.
 All 11 tests pass. **Phase 2 is done, openFDA-only** — FSIS stays deferred until a
 US-region Cloud Run test (see the 2026-08-23 entry above).
+
+## 2026-08-23 — Local pipeline built end-to-end: storage stand-in, invoices, Matching Agent
+
+User's call: no GCP update yet, build everything that doesn't need it before circling
+back. Built the whole local chain in one push — ingestion (already done) -> local storage
+-> invoice parsing -> the Matching Agent itself, and ran it for real.
+
+- **`agents/storage.py`** — a local JSON-file stand-in for Firestore, using the same
+  collection-path/doc-id addressing (`businesses/{id}/invoices/{id}`) so swapping to real
+  Firestore later means rewriting this file's insides, not any calling code. Runtime data
+  goes to `agents/local_data/` (gitignored).
+- **5 sample invoices** (`agents/sample_data/invoices/`) — Sysco, US Foods, a local
+  distributor, a wholesale club, and Restaurant Depot formats, each with different real
+  column layouts. Deliberately built to cover all four evaluation categories the plan
+  calls for, not just "some invoices": 2 true positives anchored on the real recalls
+  already verified in Phase 2 (H-0552-2026 potato chips, H-1219-2026 cottage cheese), 1
+  near-miss (same brand — Uncle Ray's — different flavor, to test false-positive
+  avoidance), 1 easy negative (unrelated products only), 1 genuinely ambiguous case (a
+  plausible product with no brand/lot on the invoice). Documented as `ground_truth.json`.
+- **`agents/invoices/csv_parser.py`** — parses any of the 5 formats via a known-alias
+  column lookup rather than assuming one schema, since real invoices don't share a
+  format. 7 tests passing against the actual sample files (not synthetic mini-fixtures).
+- **`agents/matching/agent.py`** — the Matching Agent itself. Gemini call using
+  `google-genai`'s Pydantic `response_schema` for reliable structured JSON (confidence +
+  reasoning per line, not hand-parsed text). Reasoning is written in Scout's first-person
+  voice, matching the brand guide and the `02_case_file_review.html` mockup's actual
+  copy ("Scout's reasoning: ...") — this text goes straight into the review UI later, not
+  through another rewrite step. Threshold routing (≥80/40-79/<40) implemented per the
+  plan's pseudocode in `docs/AGENTS.md`.
+- **Ran it for real** (`agents/run_matching_demo.py`) against both live recalls and all 5
+  invoices. Result, unedited: the heavily-abbreviated true positive ("LOWES FD S/C ONION
+  CHIPS 8Z") scored 95% and auto-actioned; the ambiguous no-brand cottage cheese line
+  scored 55% and correctly routed to `pending_review`, with Scout's reasoning explicitly
+  naming the missing brand/lot info; unrelated products scored low and were rejected.
+  **The near-miss case (Uncle Ray's BBQ chips vs. the recalled sour-cream-and-onion
+  flavor) was NOT auto-actioned despite the brand match** — exactly the false-positive
+  trap this needed to avoid, and the system instruction's explicit rule about brand
+  similarity alone not being sufficient held up under a real test, not just in theory.
+- Wrote `agents/matching/test_agent.py` — 3 live automated tests (not just eyeballing the
+  demo output) asserting the routing OUTCOME for the true positive, the near-miss, and
+  unrelated products. All pass. This is now permanent regression protection for future
+  prompt tuning.
+- Fixed a cosmetic bug along the way: an em-dash in a print statement was garbling on
+  Windows console encoding — swapped for a plain hyphen.
+- **Not yet done:** the photographed/invoice-image multimodal path (Best Multimodal UX
+  requirement, still Phase 4), a Cloud Run region choice for the eventual FSIS re-test,
+  and scaling the sample/ground-truth set from 5 invoices toward the N=30 needed for
+  Phase 8's real experiment.

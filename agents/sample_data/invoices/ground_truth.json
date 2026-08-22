@@ -1,0 +1,42 @@
+[
+  {
+    "file": "sysco_001_true_positive.csv",
+    "line_text": "LOWES FD S/C ONION CHIPS 8Z",
+    "category": "true_positive",
+    "recall_source": "openFDA",
+    "recall_number": "H-0552-2026",
+    "note": "Abbreviated match to the real Lowes Foods sour cream and onion chips recall (Class II, mislabeling/undeclared ingredients). Tests fuzzy matching on heavy abbreviation."
+  },
+  {
+    "file": "usfoods_002_true_positive.csv",
+    "line_text": "SEL LATINOS REQUESON MEX CHEESE 16Z",
+    "category": "true_positive",
+    "recall_source": "openFDA",
+    "recall_number": "H-1219-2026",
+    "note": "Abbreviated match to the real Selectos Latinos Requeson Mexicano recall (Class I, Listeria). Higher-stakes case — should route to auto-actioned if confidence is high."
+  },
+  {
+    "file": "local_distributor_003_near_miss.csv",
+    "line_text": "Uncle Rays BBQ Kettle Chips 8oz",
+    "category": "near_miss_true_negative",
+    "recall_source": null,
+    "recall_number": null,
+    "note": "Same brand family (Uncle Ray's) and package size as H-0552-2026, but a DIFFERENT flavor (BBQ, not sour cream and onion) — not the recalled product. Tests whether the agent avoids a false positive on brand-name similarity alone."
+  },
+  {
+    "file": "wholesale_004_easy_negative.csv",
+    "line_text": "(entire invoice)",
+    "category": "easy_true_negative",
+    "recall_source": null,
+    "recall_number": null,
+    "note": "No line items plausibly related to either seeded recall — baseline check that the agent doesn't hallucinate matches on unrelated products."
+  },
+  {
+    "file": "restaurant_depot_005_ambiguous.csv",
+    "line_text": "Mexican Style Cottage Cheese, no brand listed on delivery slip",
+    "category": "ambiguous_should_route_to_review",
+    "recall_source": "openFDA",
+    "recall_number": "H-1219-2026",
+    "note": "Same product TYPE as the Selectos Latinos recall, but no brand/lot on the invoice — genuinely can't be confirmed from this data alone. Correct behavior is a low/mid confidence score routed to human review, NOT an auto-action guess. This is the case that exercises the plan's 'insufficient data, don't guess' failure mode."
+  }
+]

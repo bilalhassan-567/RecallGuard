@@ -50,6 +50,9 @@ Thumbs.db
 # --- ADK runtime state (created by `adk run`/`adk web`, not source) --------
 .adk/
 
+# --- Local Firestore stand-in (agents/storage.py) — runtime state, not source ----
+agents/local_data/
+
 # --- Scratch -------------------------------------------------------------
 scratchpad/
 *.tmp

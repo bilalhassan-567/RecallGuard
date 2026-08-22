@@ -2,3 +2,4 @@ google-genai
 google-adk
 python-dotenv
 requests
+pydantic
