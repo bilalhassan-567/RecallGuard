@@ -186,3 +186,17 @@ hit the same block) but nothing in the build should assume FSIS is available unt
 otherwise. This is also a genuine, real instance of the failure-handling behavior the
 plan already designs for (retry/log/continue on an unreachable source) — not just a
 hypothetical for the demo.
+
+## 2026-08-23 — Phase 2 unit tests written and passing (11/11)
+
+Closed the last open Phase 2 checklist item. `agents/ingestion/test_normalize.py` — 8
+offline tests, no network: a real captured FSIS record (Brazilian Taste, #036-2025) used
+as ground truth for `normalize_fsis`, plus full edge-case coverage of `_split_states`
+(empty, "Nationwide", plain CSV, the boilerplate-prefix bug fixed earlier, single state
+with no comma). `agents/ingestion/test_openfda_live.py` — 3 live tests against
+`api.fda.gov`, pinned to two specific real recalls by exact `recall_number` (Uncle Ray's
+potato chips, Class II; Selectos Latinos cottage cheese, Class I) rather than a date
+window, so they stay stable over time — values match what was manually verified live
+earlier in the session. Added `openfda_client.fetch_by_recall_number()` to support this.
+All 11 tests pass. **Phase 2 is done, openFDA-only** — FSIS stays deferred until a
+US-region Cloud Run test (see the 2026-08-23 entry above).

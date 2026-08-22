@@ -56,5 +56,18 @@ def fetch_since(report_date_from: str, report_date_to: str | None = None) -> lis
     return results
 
 
+def fetch_by_recall_number(recall_number: str) -> dict | None:
+    """Looks up one specific recall by its exact recall_number. Used by tests (pinning
+    against a known record is more reliable than guessing a date window) and useful
+    generally for re-checking a specific recall later."""
+    url = f'{BASE_URL}?search=recall_number:"{recall_number}"&limit=1'
+    resp = requests.get(url, timeout=30)
+    if resp.status_code == 404:
+        return None
+    resp.raise_for_status()
+    results = resp.json().get("results", [])
+    return results[0] if results else None
+
+
 def _today() -> str:
     return time.strftime("%Y-%m-%d")

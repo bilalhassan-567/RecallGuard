@@ -54,7 +54,7 @@ work wraps)?
 |---|---|
 | 0 — Documentation & repo scaffolding | In progress |
 | 1 — Foundations (GCP, ADK hello-world, Firestore schema) | Not started |
-| 2 — Recall ingestion (FSIS + openFDA) | In progress |
+| 2 — Recall ingestion (FSIS + openFDA) | Done (openFDA-only; FSIS deferred, see notes) |
 | 3 — Event backbone (Pub/Sub + Scheduler) | Not started |
 | 4 — Invoice ingestion (CSV + multimodal image) | Not started |
 | 5 — Matching Agent (Gemini reasoning + confidence routing) | Not started |
@@ -106,9 +106,14 @@ work wraps)?
       sample record and a live openFDA response, not guessed. Fixed a messiness bug in
       `distributionStates` parsing along the way (openFDA prefixes it with a boilerplate
       sentence; now stripped before splitting).
-- [ ] Unit tests against a handful of known historical recalls — not yet written; the
-      smoke test (`agents/ingestion/test_ingestion.py`) covers "does it run," not
-      correctness against known cases.
+- [x] **Unit tests against known historical recalls** (2026-08-23) — 11 tests, all
+      passing. `test_normalize.py`: 8 offline/fixture tests (a real captured FSIS record
+      used as ground truth, plus full coverage of the `_split_states` edge cases —
+      empty, "Nationwide", plain CSV, the boilerplate-prefix bug, single state). `test_
+      openfda_live.py`: 3 live tests pinned against two specific real recalls by exact
+      `recall_number` (not a date window, so they're stable over time) — verified against
+      values manually confirmed earlier in the session, plus a not-found case. Added
+      `openfda_client.fetch_by_recall_number()` to support pinned lookups.
 
 ## Phase 3 — Event backbone
 
