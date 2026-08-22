@@ -333,3 +333,68 @@ target, not just a nice-to-have.
   accent to "Latínos" that was displaying as `Lat�nos` before the fix).
 - Added `Pillow` to `agents/requirements.txt` (test-image generation only, not part of
   the runtime pipeline).
+
+## 2026-08-23 — Hit the Gemini free-tier daily quota mid-session
+
+Running the full pipeline again (to seed real dashboard data) failed with
+`RESOURCE_EXHAUSTED` — the AI Studio free tier caps at **20 requests/day per model**,
+and today's cumulative testing across every phase used it up. Logged in
+`docs/RISK_REGISTER.md` — this threatens Phase 8's N=30 experiment specifically, which
+needs far more than 20 calls in one run; will need to either spread it across days on
+free tier or move to Vertex AI (paid) once GCP billing clears. Decided not to keep
+retrying — paced remaining work around it instead of burning more quota chasing a fresh
+run today.
+
+## 2026-08-23 — Dashboard built: real backend, real frontend, visually verified (Phase 7 core done)
+
+User's instruction: keep building the rest. Built the "Scout" corkboard dashboard —
+`agents/dashboard/`, FastAPI backend + vanilla JS frontend adapted from the actual
+brand-guide mockup CSS (not a generic template), reading live from `agents/storage.py`.
+
+- **Found and fixed a real design gap first**: `storage.list_collection()` returned
+  parsed JSON with no way to know which document a record came from — the dashboard
+  needs this to correlate review-queue items with their matches and to call the
+  confirm/reject endpoints. Fixed by having `list_collection` inject an `_id` field
+  (the document's filename stem) into every returned record.
+- **`agents/orchestrator.py`** — new, ties ingestion → matching → persistence → action
+  into one reusable pipeline call (`process_recall`), used by both
+  `run_matching_demo.py` (refactored to use it instead of duplicating logic) and the
+  dashboard's confirm/reject actions (`resolve_review_item` — confirming a review-queue
+  item promotes it to `auto_actioned` and genuinely runs the Action Agent, since a human
+  just did the confidence check the model couldn't).
+- **Found and fixed a real correctness bug via this refactor**: when the same recall
+  matched two different invoice lines for one business (which happened for real — the
+  CSV and photo invoices both had a Selectos Latinos line), the Action Agent derived its
+  PDF filename/compliance-log key from recall+business only, so the second match's PDF
+  silently overwrote the first's. Fixed by having callers pass their own unique
+  `match_id` through to `run_action_agent`; added a regression test
+  (`test_two_matches_same_recall_dont_collide_when_match_id_given`).
+- **`agents/dashboard/server.py`** — `/api/state` (business + cases + review queue +
+  metrics, joined from storage), `/api/review/{id}/confirm|reject`. 4 tests passing via
+  FastAPI's `TestClient` (no live server needed): empty state, matches+queue joins, the
+  full confirm→Action-Agent→compliance-log path, 404 on an unknown match.
+- **`agents/dashboard/static/index.html`** — adapted directly from the real
+  `01_dashboard.html`/`02_case_file_review.html` mockups' actual CSS tokens/fonts, not
+  reinvented: the case board, the "Needs Your Nose" review queue, and the case-file
+  modal with the confidence dial and Scout's stored reasoning. Confirm/reject wired to
+  the real API, 5s polling for near-real-time refresh per `docs/ARCHITECTURE.md`.
+- **Seeded real data without new Gemini calls** (`seed_dashboard_data.py`) — recalls
+  fetched live from openFDA (no quota limit there), match/reasoning content reused
+  verbatim from real Gemini outputs already captured earlier this session (not
+  fabricated — explicitly documented as a stopgap in the script's own docstring).
+- **Visually verified with an actual headless browser**, not just by reading the code.
+  Neither `chromium-cli` nor Node.js/npx were available in this environment, so installed
+  Python's `playwright` + Chromium as a fallback. Screenshotted the case board (4 cases,
+  correct stamps/tags), opened the review modal via a real click (confidence dial,
+  Scout's actual stored reasoning), and — the real test — clicked **Confirm Match** and
+  verified the review count went 1→0, a new compliance PDF and log entry appeared on
+  disk, and the browser console had zero JS errors.
+- **Found and fixed a real CSS bug from the screenshot**: a redundant "CAUGHT" text label
+  next to the confidence percentage visually overlapped the paw-stamp graphic on
+  auto-actioned cards. Removed it — the stamp alone already says that.
+- **Deliberately not built**: Recall Radar map, streak counter, and the animated
+  pin-and-string connector between a specific recall and its matching evidence card (the
+  original mockup hand-positions that for exactly 2 cards; doing it generically for a
+  variable-length list needs real layout logic). All three are explicitly named as the
+  first things to cut under time pressure in `docs/PLAN.md`'s own priority list — correct
+  to defer them ahead of harder remaining work, not an oversight.

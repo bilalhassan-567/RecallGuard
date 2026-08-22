@@ -117,9 +117,17 @@ def generate_compliance_record(match: dict, recall: dict, business: dict, checkl
     }
 
 
-def run_action_agent(match: dict, recall: dict, business: dict) -> dict:
+def run_action_agent(match: dict, recall: dict, business: dict, match_id: str | None = None) -> dict:
     """The only entry point that should be called from outside this module. Refuses to
-    run on anything but a confirmed auto_actioned match — see module docstring point 3."""
+    run on anything but a confirmed auto_actioned match — see module docstring point 3.
+
+    match_id should be the caller's own unique ID for this specific match (orchestrator.py
+    generates one per match). Without it, this falls back to deriving one from
+    recall+business alone — which silently collides (and overwrites a prior PDF/compliance
+    record) whenever the same recall matches more than one invoice line for the same
+    business. Found this the hard way on a real run where a recall matched both a CSV line
+    and a photographed-invoice line for one business — always pass match_id when calling
+    this from a real pipeline, not just in isolated tests."""
     if match.get("status") != "auto_actioned":
         raise ValueError(
             f"run_action_agent refuses to act on status={match.get('status')!r} — "
@@ -131,11 +139,13 @@ def run_action_agent(match: dict, recall: dict, business: dict) -> dict:
     drafts = generate_notification_drafts(match, recall, business)
     compliance_record = generate_compliance_record(match, recall, business, checklist)
 
-    match_id = _safe_filename(f"{recall.get('sourceRecordId', 'unknown')}_{business.get('id', 'unknown')}")
-    pdf_path = pdf_export.write_compliance_pdf(compliance_record, ARTIFACTS_DIR / f"{match_id}.pdf")
+    if match_id is None:
+        match_id = f"{recall.get('sourceRecordId', 'unknown')}_{business.get('id', 'unknown')}"
+    safe_id = _safe_filename(match_id)
+    pdf_path = pdf_export.write_compliance_pdf(compliance_record, ARTIFACTS_DIR / f"{safe_id}.pdf")
 
     business_id = business.get("id", "unknown")
-    storage.save(f"businesses/{business_id}/compliance_log", match_id, compliance_record)
+    storage.save(f"businesses/{business_id}/compliance_log", safe_id, compliance_record)
 
     return {
         "checklist": checklist,

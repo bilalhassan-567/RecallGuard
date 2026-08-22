@@ -59,7 +59,7 @@ work wraps)?
 | 4 — Invoice ingestion (CSV + multimodal image) | Done (local) |
 | 5 — Matching Agent (Gemini reasoning + confidence routing) | Core logic done, validated |
 | 6 — Action Agent + artifacts (checklist/notification/compliance PDF) | Done (local) |
-| 7 — Dashboard / UI (Scout corkboard) | Not started |
+| 7 — Dashboard / UI (Scout corkboard) | Core done (local), polish items remain |
 | 8 — Quantitative experiment (N=30 baseline vs agent) | Not started |
 | 9 — Failure-injection rehearsal + Architectural Design checklist | Not started |
 | 10 — Demo video, docs polish, submission | Not started |
@@ -200,12 +200,36 @@ work wraps)?
 
 ## Phase 7 — Dashboard / UI ("Scout" corkboard)
 
-- [ ] Corkboard case board reading `recalls/{}` + `matches/{}`
-- [ ] Case-file review screen (confidence dial + Scout's reasoning + confirm/reject)
-- [ ] Recall-Free Streak counter (reads `metrics/{businessId}_daily`)
-- [ ] Recall Radar map (approximate state centroids)
-- [ ] Paw-stamp "CAUGHT IT" on confirmed matches
-- [ ] Compliance record kept visually distinct from the fun UI (judge-facing intentionality)
+- [x] **Corkboard case board reading real data** (2026-08-23) — `agents/dashboard/`,
+      FastAPI backend + vanilla JS frontend, adapted from the actual brand-guide mockup
+      CSS/tokens (not a generic template). Reads live from `agents/storage.py`'s
+      `matches`/`recalls`/`review_queue`/`metrics` — same Firestore-shaped addressing, so
+      swapping to real Firestore later is a backend change, not a UI rewrite.
+- [x] **Case-file review screen (confidence dial + Scout's reasoning + confirm/reject)**
+      — a modal, not a separate page, matching `02_case_file_review.html`'s visual style.
+      **Confirm/reject are real, not decorative**: confirming a pending-review match
+      calls `orchestrator.resolve_review_item`, which genuinely runs the Action Agent and
+      produces a real compliance PDF — verified end-to-end with a headless-browser test
+      (screenshot before/after, review queue count 1→0, PDF + compliance_log entry
+      confirmed on disk).
+- [x] **Paw-stamp "CAUGHT IT" on confirmed matches** — implemented, visually verified.
+- [ ] Recall-Free Streak counter — not built yet (metrics rollup exists, just not
+      surfaced as a streak specifically).
+- [ ] Recall Radar map (approximate state centroids) — not built.
+- [x] Compliance record kept visually distinct from the fun UI — already true by
+      construction (Phase 6's PDF has zero Scout branding, verified visually).
+- **4 API tests passing** (`agents/dashboard/test_server.py`, FastAPI `TestClient`, no
+  live server/network needed) — empty state, matches+review-queue joins, the full
+  confirm→Action-Agent→compliance-log path, and a 404 on an unknown match.
+- **Visually verified with a real headless browser** (Playwright, installed this session
+  since neither `chromium-cli` nor Node.js were available here) — not just "the code
+  looks right." Screenshotted the case board, the review modal, and the state after a
+  real confirm click; checked the browser console for JS errors (none). See
+  `docs/PROGRESS.md` for what the screenshots showed, including one real CSS bug found
+  and fixed (a "CAUGHT" label overlapping the paw stamp).
+- Deliberately deferred: Recall Radar and streak counter are cosmetic (explicitly named
+  as the *first* things to cut under time pressure in `docs/PLAN.md`'s priority list) —
+  correctly not spending time on them before the harder remaining phases.
 
 ## Phase 8 — Quantitative experiment
 

@@ -27,10 +27,20 @@ def get(collection_path: str, doc_id: str) -> dict[str, Any] | None:
 
 
 def list_collection(collection_path: str) -> list[dict[str, Any]]:
+    """Each returned dict gets an `_id` key (the document's own filename stem) even if
+    the caller never stored one — otherwise a caller has no reliable way to know which
+    document a listed record came from, since list_collection has no other way to
+    surface that. Overwrites any pre-existing `_id` field in the stored data; don't use
+    that key for anything else."""
     dir_path = DATA_DIR / collection_path
     if not dir_path.exists():
         return []
-    return [json.loads(p.read_text(encoding="utf-8")) for p in sorted(dir_path.glob("*.json"))]
+    results = []
+    for p in sorted(dir_path.glob("*.json")):
+        record = json.loads(p.read_text(encoding="utf-8"))
+        record["_id"] = p.stem
+        results.append(record)
+    return results
 
 
 def _doc_path(collection_path: str, doc_id: str) -> Path:

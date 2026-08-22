@@ -1,10 +1,10 @@
-"""End-to-end local demo: fetch two real recalls -> parse all 5 sample invoices -> run
-the Matching Agent -> run the Action Agent on anything auto-actioned (real checklist,
-notification drafts, and a compliance PDF) -> print everything, checked informally
-against agents/sample_data/invoices/ground_truth.json.
+"""End-to-end local demo: fetch two real recalls -> parse all 5 sample invoices + 1
+photographed invoice -> run the full orchestrator (matching -> persist -> act) -> print
+everything, checked informally against agents/sample_data/invoices/ground_truth.json.
 
-This is the full pipeline (ingestion -> normalize -> parse -> match -> act), all local,
-no GCP needed. Run from agents/: python run_matching_demo.py
+Unlike a plain print-only demo, this persists real data to agents/local_data/ via
+orchestrator.py — so running this is also how the dashboard (agents/dashboard/) gets real
+data to display. Run from agents/: python run_matching_demo.py
 
 Note on structure: each subpackage (ingestion/, invoices/, matching/, action/) uses flat
 sibling imports internally (e.g. `import normalize`, not `from . import normalize`),
@@ -22,15 +22,15 @@ from pathlib import Path
 sys.stdout.reconfigure(encoding="utf-8")
 
 AGENTS_DIR = Path(__file__).resolve().parent
-for sub in ("ingestion", "invoices", "matching", "action"):
+for sub in ("ingestion", "invoices"):
     sys.path.insert(0, str(AGENTS_DIR / sub))
 
-import action_agent  # noqa: E402  (path setup must run first)
 import csv_parser  # noqa: E402
 import image_parser  # noqa: E402
-import matching_agent  # noqa: E402
 import normalize  # noqa: E402
 import openfda_client  # noqa: E402
+import orchestrator  # noqa: E402
+import storage  # noqa: E402
 
 KNOWN_RECALLS = ["H-0552-2026", "H-1219-2026"]
 INVOICE_DIR = AGENTS_DIR / "sample_data" / "invoices"
@@ -61,13 +61,15 @@ def main() -> None:
 
     print(f"Loaded {len(all_lines)} invoice line items total from {INVOICE_DIR.name}/\n")
 
+    storage.save("businesses", DEMO_BUSINESS["id"], DEMO_BUSINESS)
+
     for recall in recalls:
         print("=" * 70)
         print(f"RECALL {recall['sourceRecordId']}: {recall['productDescription'][:70]}")
         print(f"Classification: {recall['classification']} | Hazard: {recall['hazardType'][:80]}")
         print("=" * 70)
-        matches = matching_agent.match_recall_against_lines(recall, all_lines)
-        matches.sort(key=lambda m: m["confidenceScore"], reverse=True)
+        result = orchestrator.process_recall(recall, all_lines, DEMO_BUSINESS)
+        matches = sorted(result["matches"], key=lambda m: m["confidenceScore"], reverse=True)
         for m in matches:
             if m["confidenceScore"] < 15:  # skip the obviously-irrelevant bulk for readability
                 continue
@@ -75,15 +77,15 @@ def main() -> None:
             print(f"\n  [{m['status'].upper()}] {m['confidenceScore']}% - {line['rawText']!r}")
             print(f"    supplier: {line['supplier']}")
             print(f"    Scout: {m['reasoning']}")
-
-            if m["status"] == "auto_actioned":
-                result = action_agent.run_action_agent(m, recall, DEMO_BUSINESS)
-                print(f"    -> Action Agent ran: PDF at {result['compliancePdfPath']}")
-                print(f"    -> Storage hint: {result['checklist']['storageHint']}")
+            if "actionResult" in m:
+                print(f"    -> Action Agent ran: PDF at {m['actionResult']['compliancePdfPath']}")
+                print(f"    -> Storage hint: {m['actionResult']['checklist']['storageHint']}")
+        print(f"\n  Summary: {result['summary']}")
         print()
 
 
 if __name__ == "__main__":
     main()
-    print("\nCompare against agents/sample_data/invoices/ground_truth.json expectations.")
+    print("Compare against agents/sample_data/invoices/ground_truth.json expectations.")
     print("Generated PDFs are in agents/local_data/artifacts/ (gitignored, not committed).")
+    print("Real data now persisted to agents/local_data/ — run the dashboard to view it.")

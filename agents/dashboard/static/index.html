@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RecallGuard — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --enamel:#F7F4EC; --steel:#2B2E33; --ledger:#EAE0C8; --ledger-dark:#DCCFAE;
+    --amber:#E2993D; --green:#2F5D50; --rust:#B34A2E; --line:#c9bd9a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--enamel); font-family:'Space Grotesk', sans-serif;
+    color:var(--steel); padding:32px;
+  }
+  .display{font-family:'Anton', sans-serif; letter-spacing:0.5px; text-transform:uppercase;}
+  .mono{font-family:'IBM Plex Mono', monospace;}
+
+  header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:28px; padding-bottom:20px; border-bottom:3px solid var(--steel);
+  }
+  .brand{display:flex; align-items:center; gap:14px;}
+  .badge{
+    width:52px; height:52px; border-radius:50%; background:var(--green);
+    border:3px solid var(--steel); display:flex; align-items:center; justify-content:center;
+    color:var(--enamel); font-size:26px;
+  }
+  .brand h1{font-size:26px; margin:0; letter-spacing:1px;}
+  .brand p{margin:2px 0 0; font-size:12px; color:#6b6558; letter-spacing:1.5px;}
+
+  .grid{display:grid; grid-template-columns: 1fr 1.6fr; gap:24px;}
+
+  .panel{
+    background:var(--ledger); border:1px solid var(--line); border-radius:4px;
+    padding:18px; position:relative; margin-bottom:20px;
+  }
+  .panel::before{
+    content:''; position:absolute; top:-6px; left:20px; width:12px; height:12px;
+    border-radius:50%; background:var(--rust); box-shadow:0 2px 3px rgba(0,0,0,0.3);
+  }
+  .panel h2{
+    font-size:14px; letter-spacing:1.5px; text-transform:uppercase;
+    margin:6px 0 14px; color:#5a5546; display:flex; justify-content:space-between;
+  }
+
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  .stat{background:var(--enamel); border:1px solid var(--line); border-radius:4px; padding:10px; text-align:center;}
+  .stat .v{font-family:'Anton'; font-size:22px;}
+  .stat .l{font-size:9px; letter-spacing:0.5px; text-transform:uppercase; color:#6b6558;}
+
+  .queue-item{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--enamel); border:1px solid var(--line); border-radius:4px;
+    padding:10px 12px; margin-bottom:8px; font-size:12px;
+  }
+  .queue-item .dot{width:8px; height:8px; border-radius:50%; background:var(--amber); display:inline-block; margin-right:8px;}
+  .btn{
+    font-family:'Space Grotesk'; font-weight:700; font-size:11px; letter-spacing:0.5px;
+    padding:6px 10px; border-radius:4px; border:1px solid var(--steel); background:var(--enamel);
+    cursor:pointer;
+  }
+  .btn:hover{background:var(--steel); color:var(--enamel);}
+  .empty{font-size:12px; color:#8a7f5f; font-style:italic;}
+
+  .corkboard{
+    background: radial-gradient(circle at 20% 30%, rgba(0,0,0,0.05) 0, transparent 40%), #C9AE7C;
+    border:8px solid #8a6a3f; border-radius:6px; padding:26px; min-height:420px;
+  }
+  .corkboard h2{color:#3d2f19; font-size:14px; letter-spacing:1.5px; text-transform:uppercase; margin:0 0 18px;}
+  .cases{display:flex; flex-wrap:wrap; gap:22px;}
+  .case{
+    position:relative; width:220px; background:var(--enamel); border:1px solid #b7ac8c;
+    box-shadow:0 6px 14px rgba(0,0,0,0.25); padding:14px 14px 16px;
+  }
+  .case:nth-child(odd){transform:rotate(-2deg);}
+  .case:nth-child(even){transform:rotate(2deg);}
+  .pin{
+    position:absolute; top:-8px; left:50%; transform:translateX(-50%); width:14px; height:14px;
+    border-radius:50%; background:radial-gradient(circle at 35% 30%, #ff8f7a, var(--rust));
+    box-shadow:0 3px 4px rgba(0,0,0,0.4);
+  }
+  .case .tag{
+    font-size:9px; letter-spacing:1px; text-transform:uppercase; display:inline-block;
+    padding:2px 6px; border-radius:2px; margin-bottom:6px;
+  }
+  .tag.auto{background:var(--green); color:var(--enamel);}
+  .tag.review{background:var(--amber); color:var(--steel);}
+  .case h3{font-size:13px; margin:0 0 4px; line-height:1.25;}
+  .case p{font-size:10.5px; margin:0; color:#5a5546; line-height:1.4;}
+  .case .conf{margin-top:10px; display:flex; align-items:center; justify-content:space-between;}
+  .conf .mono{font-size:11px;}
+  .stamp{
+    position:absolute; bottom:-10px; right:-10px; width:56px; height:56px;
+    border:3px solid var(--rust); border-radius:50%; color:var(--rust);
+    display:flex; align-items:center; justify-content:center; font-family:'Anton';
+    font-size:10px; text-align:center; line-height:1.1; transform:rotate(-14deg);
+    opacity:0.85; background:rgba(247,244,236,0.6);
+  }
+
+  /* Case-file review modal */
+  .modal-backdrop{
+    display:none; position:fixed; inset:0; background:rgba(20,18,14,0.55);
+    align-items:center; justify-content:center; z-index:50;
+  }
+  .modal-backdrop.open{display:flex;}
+  .modal{
+    background:var(--ledger); border:1px solid var(--line); border-radius:6px;
+    max-width:620px; width:92%; padding:24px; box-shadow:0 12px 40px rgba(0,0,0,0.3);
+  }
+  .modal h2{font-size:18px; margin:0 0 4px;}
+  .modal .badge2{font-size:11px; background:var(--amber); padding:4px 10px; border-radius:20px; display:inline-block; margin-bottom:14px;}
+  .modal .evidence{background:var(--enamel); border:2px solid var(--steel); border-radius:4px; padding:14px; margin-bottom:14px;}
+  .modal .line-item{background:#fff; border:1px solid var(--line); border-radius:4px; padding:9px; font-family:'IBM Plex Mono'; font-size:11.5px; margin-bottom:10px;}
+  .modal .reasoning{font-size:12px; background:#eef3ef; border-left:3px solid var(--green); padding:9px 11px; line-height:1.5;}
+  .modal .reasoning b{color:var(--green);}
+  .modal .confidence{margin-top:12px; display:flex; align-items:center; gap:12px;}
+  .modal .dial{width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; position:relative;}
+  .modal .dial .hole{width:38px; height:38px; border-radius:50%; background:var(--ledger); display:flex; align-items:center; justify-content:center; font-family:'Anton'; font-size:12px;}
+  .modal .actions{display:flex; gap:12px; margin-top:18px; justify-content:flex-end;}
+  .stampbtn{
+    font-family:'Anton'; letter-spacing:1px; font-size:12px; padding:10px 18px; border-radius:6px;
+    cursor:pointer; border:3px solid; text-transform:uppercase;
+  }
+  .confirm{background:var(--rust); color:var(--enamel); border-color:#7d3320; box-shadow:0 3px 0 #7d3320;}
+  .falsealarm{background:transparent; color:var(--steel); border-color:var(--steel);}
+  .close-x{position:absolute; top:14px; right:18px; cursor:pointer; font-size:14px; color:#8a7f5f;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="badge">🐾</div>
+    <div>
+      <h1 class="display">RecallGuard</h1>
+      <p id="business-tagline">Scout is on the case</p>
+    </div>
+  </div>
+</header>
+
+<div class="grid">
+  <div>
+    <div class="panel">
+      <h2>Recall Activity</h2>
+      <div class="stats">
+        <div class="stat"><div class="v" id="stat-checked">0</div><div class="l">Recalls Checked</div></div>
+        <div class="stat"><div class="v" id="stat-matches">0</div><div class="l">Matches Found</div></div>
+        <div class="stat"><div class="v" id="stat-time">0s</div><div class="l">Avg Detect Time</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Needs Your Nose <span class="mono" style="font-size:10px; color:var(--rust);" id="review-count">0 PENDING</span></h2>
+      <div id="review-list"></div>
+    </div>
+  </div>
+
+  <div class="panel corkboard">
+    <h2>Case Board</h2>
+    <div class="cases" id="cases"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal">
+    <span class="close-x" id="modal-close">✕ close</span>
+    <h1 class="display" style="font-size:20px; margin:0 0 6px;" id="modal-title">Scout needs a second opinion</h1>
+    <div class="badge2 mono" id="modal-confidence-badge">0% CONFIDENCE</div>
+
+    <div class="evidence">
+      <h2 style="font-size:15px; margin:0 0 4px;" id="modal-recall-title"></h2>
+      <div class="mono" style="font-size:11px; color:#6b6558; margin-bottom:10px;" id="modal-recall-meta"></div>
+      <div class="line-item" id="modal-line-item"></div>
+      <div class="reasoning"><b>Scout's reasoning:</b> <span id="modal-reasoning"></span></div>
+      <div class="confidence">
+        <div class="dial" id="modal-dial"><div class="hole mono" id="modal-dial-text">0%</div></div>
+        <div class="mono" style="font-size:10.5px; color:#6b6558;">Below the auto-action threshold — routed here instead of guessing.</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="stampbtn falsealarm" id="btn-reject">False Alarm</button>
+      <button class="stampbtn confirm" id="btn-confirm">Confirm Match — Caught It</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentReviewMatchId = null;
+
+async function loadState() {
+  const res = await fetch('/api/state');
+  const data = await res.json();
+  render(data);
+}
+
+function render(data) {
+  document.getElementById('business-tagline').textContent = `Scout is on the case — ${data.business.name || 'your business'}`;
+  document.getElementById('stat-checked').textContent = data.metrics.recallsChecked;
+  document.getElementById('stat-matches').textContent = data.metrics.matchesFound;
+  document.getElementById('stat-time').textContent = data.metrics.avgTimeToDetectionSeconds + 's';
+
+  const reviewList = document.getElementById('review-list');
+  reviewList.innerHTML = '';
+  document.getElementById('review-count').textContent = `${data.reviewQueue.length} PENDING`;
+  if (data.reviewQueue.length === 0) {
+    reviewList.innerHTML = '<div class="empty">Nothing needs review right now.</div>';
+  }
+  data.reviewQueue.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'queue-item';
+    div.innerHTML = `<span><span class="dot"></span>${escapeHtml(item.match.invoiceLineRef.rawText)}</span><span class="btn" data-id="${item.reviewItem._id}">Review</span>`;
+    div.querySelector('.btn').addEventListener('click', () => openReviewModal(item));
+    reviewList.appendChild(div);
+  });
+
+  const casesDiv = document.getElementById('cases');
+  casesDiv.innerHTML = '';
+  if (data.cases.length === 0) {
+    casesDiv.innerHTML = '<div class="empty">No cases yet — run the pipeline (run_matching_demo.py) to populate real data.</div>';
+  }
+  data.cases.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'case';
+    const isAuto = c.match.status === 'auto_actioned';
+    const tagClass = isAuto ? 'auto' : (c.match.status === 'pending_review' ? 'review' : '');
+    if (!tagClass) return; // skip rejected matches on the board — reviewed-and-cleared, not case-worthy
+    card.innerHTML = `
+      <div class="pin"></div>
+      <span class="tag ${tagClass}">${isAuto ? 'Auto-Actioned' : 'Pending Review'}</span>
+      <h3>${escapeHtml(c.recall.productDescription.slice(0, 60))}</h3>
+      <p>${escapeHtml(c.match.invoiceLineRef.rawText)} · ${escapeHtml(c.match.invoiceLineRef.supplier || '')}</p>
+      <div class="conf"><span class="mono">${c.match.confidenceScore}% match</span></div>
+      ${isAuto ? '<div class="stamp">SCOUT<br>CAUGHT IT</div>' : ''}
+    `;
+    casesDiv.appendChild(card);
+  });
+}
+
+function openReviewModal(item) {
+  currentReviewMatchId = item.reviewItem._id;
+  document.getElementById('modal-confidence-badge').textContent = `${item.match.confidenceScore}% CONFIDENCE`;
+  document.getElementById('modal-recall-title').textContent = item.recall.productDescription;
+  document.getElementById('modal-recall-meta').textContent = `${item.recall.source} · ${item.recall.classification} · ${item.recall.hazardType}`;
+  document.getElementById('modal-line-item').textContent = `"${item.match.invoiceLineRef.rawText}" — ${item.match.invoiceLineRef.supplier || 'unknown supplier'}`;
+  document.getElementById('modal-reasoning').textContent = item.match.reasoning;
+  document.getElementById('modal-dial-text').textContent = `${item.match.confidenceScore}%`;
+  document.getElementById('modal-dial').style.background =
+    `conic-gradient(var(--amber) 0 ${item.match.confidenceScore}%, #e3d9bd ${item.match.confidenceScore}% 100%)`;
+  document.getElementById('modal-backdrop').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+  currentReviewMatchId = null;
+}
+
+async function decide(decision) {
+  if (!currentReviewMatchId) return;
+  await fetch(`/api/review/${currentReviewMatchId}/${decision}`, { method: 'POST' });
+  closeModal();
+  loadState();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str || '';
+  return div.innerHTML;
+}
+
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('btn-confirm').addEventListener('click', () => decide('confirm'));
+document.getElementById('btn-reject').addEventListener('click', () => decide('reject'));
+
+loadState();
+setInterval(loadState, 5000); // near-real-time refresh, matches docs/ARCHITECTURE.md's UI description
+</script>
+</body>
+</html>

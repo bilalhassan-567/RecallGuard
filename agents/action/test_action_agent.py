@@ -112,6 +112,18 @@ class TestRunActionAgentEndToEnd(unittest.TestCase):
         self.assertEqual(result["complianceRecord"]["status"], "draft_ready_for_human_review")
         self.assertIn("checklist_generated", result["complianceRecord"]["actionsTaken"])
 
+    def test_two_matches_same_recall_dont_collide_when_match_id_given(self):
+        """Regression test: found on a real run where the same recall matched two
+        different invoice lines for one business — without an explicit match_id, both
+        wrote to the same PDF path derived from recall+business alone, and the second
+        silently overwrote the first."""
+        second_match = {**AUTO_MATCH, "invoiceLineRef": {**AUTO_MATCH["invoiceLineRef"], "rawText": "a different line"}}
+        result_a = action_agent.run_action_agent(AUTO_MATCH, RECALL, BUSINESS, match_id="match-a")
+        result_b = action_agent.run_action_agent(second_match, RECALL, BUSINESS, match_id="match-b")
+        self.assertNotEqual(result_a["compliancePdfPath"], result_b["compliancePdfPath"])
+        self.assertTrue(Path(result_a["compliancePdfPath"]).exists())
+        self.assertTrue(Path(result_b["compliancePdfPath"]).exists())
+
 
 if __name__ == "__main__":
     unittest.main()

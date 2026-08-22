@@ -52,6 +52,7 @@ Thumbs.db
 
 # --- Local Firestore stand-in (agents/storage.py) — runtime state, not source ----
 agents/local_data/
+agents/local_data_test*/
 
 # --- Scratch -------------------------------------------------------------
 scratchpad/
