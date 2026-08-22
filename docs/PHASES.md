@@ -188,8 +188,13 @@ Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
       of Vertex AI — same `google-genai` SDK either way, so switching to Vertex later is
       a one-line env change (`GOOGLE_GENAI_USE_VERTEXAI=TRUE`), not a rewrite.
       **Confirmed working live** — `python test_gemini.py` returned a clean response from
-      `gemini-3.5-flash` with real token counts. Model ID confirmed correct. Next: run
-      `adk run hello_agent` to confirm the ADK CLI layer too, then start Phase 2.
+      `gemini-3.5-flash` with real token counts, and `adk run hello_agent` loaded and
+      responded correctly through the actual ADK CLI. (The agent's own reply claimed
+      "Gemini 2.5 Flash" — that's the model unreliably self-reporting in prose, not
+      authoritative; the real config is confirmed by `test_gemini.py`'s printed model ID,
+      which came from a successful API call using our own `gemini-3.5-flash` setting.)
+      **Phase 1 local scaffolding is done.** Only "deployed to Cloud Run" remains, pending
+      the GCP billing ticket.
 - [ ] **Timeline strategy** — see the calendar reality check above; needs an answer before
       Day 1 starts, since it changes how aggressively to cut scope. Starting from a
       zero GCP setup (just confirmed above) makes this more pressing, not less.
