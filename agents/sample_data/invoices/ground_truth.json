@@ -38,5 +38,13 @@
     "recall_source": "openFDA",
     "recall_number": "H-1219-2026",
     "note": "Same product TYPE as the Selectos Latinos recall, but no brand/lot on the invoice — genuinely can't be confirmed from this data alone. Correct behavior is a low/mid confidence score routed to human review, NOT an auto-action guess. This is the case that exercises the plan's 'insufficient data, don't guess' failure mode."
+  },
+  {
+    "file": "photo_006_true_positive.jpg",
+    "line_text": "Selectos Latinos Requeson 16oz",
+    "category": "true_positive_multimodal",
+    "recall_source": "openFDA",
+    "recall_number": "H-1219-2026",
+    "note": "A synthetic 'photographed invoice' (generate_test_invoice_image.py) — printed text, slight rotation, mild noise/blur to simulate a phone photo, not a clean export. Same recalled product as usfoods_002 but read via Gemini multimodal image input, not CSV text. This is the Best Multimodal UX proof case; replace with a genuine photographed invoice before the actual demo recording (see docs/PHASES.md, Phase 4)."
   }
 ]

@@ -56,7 +56,7 @@ work wraps)?
 | 1 — Foundations (GCP, ADK hello-world, Firestore schema) | Not started |
 | 2 — Recall ingestion (FSIS + openFDA) | Done (openFDA-only; FSIS deferred, see notes) |
 | 3 — Event backbone (Pub/Sub + Scheduler) | Not started |
-| 4 — Invoice ingestion (CSV + multimodal image) | In progress (CSV done, image not started) |
+| 4 — Invoice ingestion (CSV + multimodal image) | Done (local) |
 | 5 — Matching Agent (Gemini reasoning + confidence routing) | Core logic done, validated |
 | 6 — Action Agent + artifacts (checklist/notification/compliance PDF) | Done (local) |
 | 7 — Dashboard / UI (Scout corkboard) | Not started |
@@ -133,8 +133,17 @@ work wraps)?
       (no lot code — tests the "don't guess" behavior). Ground truth documented in
       `ground_truth.json`. Room to grow toward 10 later; this set already exercises every
       behavior the plan calls out.
-- [ ] **Photographed/scanned invoice via Gemini multimodal — required scope, not stretch**
-      (Best Multimodal UX target) — not started yet.
+- [x] **Photographed/scanned invoice via Gemini multimodal** (2026-08-23) — required
+      scope, not stretch (Best Multimodal UX target). `agents/invoices/image_parser.py`,
+      same output shape as `csv_parser.py` so the Matching Agent doesn't care which path
+      an invoice came from. Same prompt-injection guard pattern as the Matching Agent
+      (image content treated as data to transcribe, not instructions). Tested against a
+      synthetic photographed-invoice image (`generate_test_invoice_image.py` — printed
+      text, rotation, noise/blur, not a clean render) — extraction correctly pulled all 5
+      line items, the supplier name, AND the date straight out of the image, and the
+      recalled product line matched at 95% through the full pipeline (matching + action)
+      exactly like the CSV cases. **3 tests passing.** Before the actual demo recording,
+      swap the synthetic image for one genuine photographed invoice (see Blockers).
 
 ## Phase 5 — Matching Agent
 
@@ -267,6 +276,12 @@ Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
       which came from a successful API call using our own `gemini-3.5-flash` setting.)
       **Phase 1 local scaffolding is done.** Only "deployed to Cloud Run" remains, pending
       the GCP billing ticket.
+- [ ] **A genuine photographed invoice, before the demo recording** — the multimodal path
+      is code-complete and tested against a synthetic image, but the actual demo script
+      (`docs/submission/demo-video-script.md`) needs a real phone photo of a real paper
+      invoice, not a generated one, for the Best Multimodal UX moment to be honest. Low
+      effort (photograph any invoice, even a made-up one printed on paper), just needs
+      doing before Day 10.
 - [ ] **Timeline strategy** — see the calendar reality check above; needs an answer before
       Day 1 starts, since it changes how aggressively to cut scope. Starting from a
       zero GCP setup (just confirmed above) makes this more pressing, not less.

@@ -16,12 +16,18 @@ subpackages had a same-named agent.py — see docs/PROGRESS.md, 2026-08-23.
 import sys
 from pathlib import Path
 
+# Windows' console defaults to cp1252, which mangles any non-ASCII character an LLM
+# response might contain (accents, em-dashes, etc.) into "?" — this is the real, root
+# fix, rather than chasing individual characters out of print statements.
+sys.stdout.reconfigure(encoding="utf-8")
+
 AGENTS_DIR = Path(__file__).resolve().parent
 for sub in ("ingestion", "invoices", "matching", "action"):
     sys.path.insert(0, str(AGENTS_DIR / sub))
 
 import action_agent  # noqa: E402  (path setup must run first)
 import csv_parser  # noqa: E402
+import image_parser  # noqa: E402
 import matching_agent  # noqa: E402
 import normalize  # noqa: E402
 import openfda_client  # noqa: E402
@@ -43,7 +49,17 @@ def main() -> None:
     all_lines = []
     for csv_path in sorted(INVOICE_DIR.glob("*.csv")):
         all_lines.extend(csv_parser.parse_csv(csv_path, supplier=csv_path.stem))
-    print(f"Loaded {len(all_lines)} invoice line items from {INVOICE_DIR.name}/\n")
+
+    photo_path = INVOICE_DIR / "photo_006_true_positive.jpg"
+    if photo_path.exists():
+        # The multimodal case — a photographed invoice, not a clean export. Best
+        # Multimodal UX target (docs/PLAN.md): this isn't a CSV, it's a real image read
+        # by Gemini's vision input, going through the exact same downstream pipeline.
+        photo_lines = image_parser.parse_image(str(photo_path))
+        print(f"Extracted {len(photo_lines)} lines from a PHOTOGRAPHED invoice (not a clean CSV)")
+        all_lines.extend(photo_lines)
+
+    print(f"Loaded {len(all_lines)} invoice line items total from {INVOICE_DIR.name}/\n")
 
     for recall in recalls:
         print("=" * 70)

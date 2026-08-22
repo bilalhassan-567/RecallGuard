@@ -296,3 +296,40 @@ constraint, not an afterthought:
   history). Worth remembering if more subpackages get added later.
 - Also fixed two cosmetic em-dash/Windows-console-encoding mojibake issues in print
   statements — harmless but would look unpolished in a demo recording.
+
+## 2026-08-23 — Multimodal invoice path built (Phase 4 fully done, local)
+
+User's instruction: keep building the rest. Picked the multimodal image path next since
+it's fully local (same Gemini key, no GCP) and it's the required-scope Best Multimodal UX
+target, not just a nice-to-have.
+
+- **`agents/invoices/image_parser.py`** — sends a photographed/scanned invoice image
+  straight to Gemini's multimodal input, using the same structured-output pattern as the
+  Matching Agent (Pydantic `response_schema`). Returns the identical rawLineItems shape
+  `csv_parser.py` does, so nothing downstream needs to know or care which path an invoice
+  came from. Same security posture as the Matching Agent too: the system instruction
+  treats image content strictly as data to transcribe, never as instructions — an image
+  containing adversarial embedded text shouldn't change extraction behavior, only get
+  transcribed verbatim as ordinary (clearly attributed) line-item text.
+- **No real photographed invoice on hand**, so built `generate_test_invoice_image.py` — a
+  one-off Pillow script that renders a plausible printed receipt and applies rotation +
+  blur + noise to simulate an actual phone photo, rather than testing against a
+  suspiciously clean render. Explicitly NOT a substitute for a real photo before the
+  actual demo recording — noted as a new blocker in `docs/PHASES.md`.
+- **Tested live against the synthetic image — worked well on the first try.** Gemini
+  correctly extracted all 5 line items AND pulled the supplier name ("GARCIA WHOLESALE
+  FOODS") and the date straight out of the image text, neither of which were in a
+  structured field — genuine multimodal reading, not just OCR-then-template. 3 tests
+  passing (`test_image_parser.py`).
+- **Wired into the full pipeline** (`run_matching_demo.py` now loads the photo alongside
+  the 5 CSVs) and ran it end to end: the photographed invoice's recalled-product line
+  matched at 95% and flowed through the Action Agent to a real compliance PDF, exactly
+  like the CSV cases — proving the Matching/Action Agents genuinely don't care which
+  ingestion path a line item came from.
+- **Root-caused the mojibake issue properly this time** instead of patching individual
+  characters: Windows' console defaults to cp1252, which mangles any non-ASCII character
+  an LLM response contains. Added `sys.stdout.reconfigure(encoding="utf-8")` once at the
+  top of `run_matching_demo.py` — confirmed it fixed a real instance (Gemini had added an
+  accent to "Latínos" that was displaying as `Lat�nos` before the fix).
+- Added `Pillow` to `agents/requirements.txt` (test-image generation only, not part of
+  the runtime pipeline).
