@@ -171,3 +171,18 @@ before splitting into a states list, verified against live data (`["MD", "VA"]` 
 just proves the code runs, not that it's correct against ground truth) — deferred to
 align with the N=30 ground-truth work in `docs/EXPERIMENT.md`, Phase 8. Firestore
 writes not wired up yet (blocked on GCP project/billing, same as Phase 1's deploy step).
+
+## 2026-08-23 — FSIS confirmed blocked from a real network too, not just the sandbox
+
+User ran `test_ingestion.py` from their own machine (real Pakistani residential network).
+openFDA: same clean success as the sandbox test. **FSIS: same 403 as the sandbox** — this
+rules out "sandbox-specific datacenter IP" as the explanation. New working theory: a
+geographic block on non-US traffic at the Akamai layer in front of this US federal (.gov)
+site, since both failing networks are non-US. Decision: stop investigating this in dev —
+not fixable from here. Updated `docs/PLAN.md` (section 1), `docs/PHASES.md`, and
+`docs/RISK_REGISTER.md`: **openFDA is the primary/sole trigger source for now**; FSIS
+gets re-tested once Cloud Run is deployed in a US region (a US-based egress IP might not
+hit the same block) but nothing in the build should assume FSIS is available until proven
+otherwise. This is also a genuine, real instance of the failure-handling behavior the
+plan already designs for (retry/log/continue on an unreachable source) — not just a
+hypothetical for the demo.

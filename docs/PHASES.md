@@ -215,17 +215,18 @@ Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
 - [ ] **Timeline strategy** — see the calendar reality check above; needs an answer before
       Day 1 starts, since it changes how aggressively to cut scope. Starting from a
       zero GCP setup (just confirmed above) makes this more pressing, not less.
-- [ ] **🔴 FSIS reachability — resolved "no key needed," but a NEW risk surfaced
-      (2026-08-22).** The API is anonymous (confirmed via real working code, not just
-      docs), but it's behind Akamai bot-management that 403'd every request from the dev
-      sandbox regardless of headers, while openFDA worked fine the same way. This could
-      be sandbox-specific — **needs testing from the user's own machine as the next
-      step** — but if Google's own Cloud Run IP ranges get flagged the same way (both are
-      "datacenter" ASNs from Akamai's perspective), the Recall Monitor agent could hit
-      this in production too, not just in dev. Mitigation already exists in the plan:
-      openFDA becomes the sole trigger source if so (see `docs/RISK_REGISTER.md`) — real
-      degradation, not a fatal blocker, but needs confirming either way before Day 2 is
-      considered actually done.
+- [x] **FSIS reachability — investigated, not fixable from dev (2026-08-22/23).** No API
+      key needed (confirmed via real working reference code), but the endpoint 403'd from
+      BOTH the dev sandbox AND the user's real Pakistani residential network — same
+      error, same behavior, ruling out "sandbox-specific datacenter IP" as the cause.
+      **Working theory: a geographic block on non-US traffic**, common for Akamai-fronted
+      US federal (.gov) sites. **Decision: stop chasing this in dev.** Treat FSIS as
+      unavailable for now; openFDA is the confirmed-working primary/sole trigger source.
+      Re-test FSIS once Cloud Run is deployed **in a US region** — a US-based Google Cloud
+      egress IP might not hit the same block, which residential/sandbox non-US IPs did.
+      The plan's existing failure-handling design (retry/log/continue, never silently
+      skip) already covers "a recall source is unreachable" without special-casing this —
+      real-world validation of that design, not just a hypothetical for the demo.
 - [ ] **Sample invoice sets (5–10, varied suppliers/formats) + one real photographed
       invoice** — not yet collected. Explicitly flagged in the plan as "takes longer to
       assemble well than people expect and gates Days 4–6" — worth starting in parallel

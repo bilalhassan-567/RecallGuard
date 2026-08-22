@@ -117,8 +117,15 @@ flagging anything ambiguous for human review instead of guessing.
    shouldn't be used to track a recall's lifecycle, and `status` (Ongoing/Terminated) isn't
    reliably updated. **We treat `report_date` as the trigger signal** ("newly published as
    of X"), never claim "live recall status."
-2. **openFDA updates weekly; FSIS's Recall API is near-real-time.** FSIS is the primary
-   "fast" trigger source; openFDA is the broader historical/matching corpus.
+2. **openFDA updates weekly; FSIS's Recall API is near-real-time — in principle.** FSIS
+   was meant to be the primary "fast" trigger source, openFDA the broader historical/
+   matching corpus. **Caveat added 2026-08-23:** FSIS's endpoint is unreachable (403)
+   from both the dev sandbox and the user's real Pakistani network — likely a geographic
+   block on non-US traffic at the Akamai layer, not a code or auth problem (see
+   `docs/RISK_REGISTER.md`). Unconfirmed whether a US-region Cloud Run deployment clears
+   this. Until proven otherwise, **treat openFDA as the primary/sole trigger source** and
+   FSIS as a bonus if the US-region deploy happens to work — don't build anything that
+   assumes FSIS is available.
 3. **openFDA query gotchas:** always quote exact-match values
    (`classification:"Class+I"`), append `.exact` when aggregating a text field, and don't
    request `report_date` ranges before 2012-06-20 (404s on all three enforcement endpoints).
