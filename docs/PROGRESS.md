@@ -118,5 +118,8 @@ Built out `agents/` so Phase 1 agent work can start today without GCP billing:
 - **Deliberately built on the Gemini Developer API (AI Studio key), not Vertex AI** —
   same `google-genai` SDK underneath, so flipping to Vertex AI later (once GCP billing
   clears) is a one-line env change (`GOOGLE_GENAI_USE_VERTEXAI=TRUE`), not a rewrite.
-- Not yet done: user needs to generate a key at https://aistudio.google.com and paste it
-  into `agents/.env` — nothing above has been run against a real key yet.
+- **Confirmed working (2026-08-22):** user generated an AI Studio key, `python
+  test_gemini.py` returned a clean response from `gemini-3.5-flash` with real prompt/
+  response token counts. Model ID confirmed correct on the first try. Gemini path is
+  fully unblocked regardless of the GCP billing ticket's outcome. Next: `adk run
+  hello_agent` to confirm the ADK CLI layer, then start Phase 2 (FSIS/openFDA ingestion).

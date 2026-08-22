@@ -186,9 +186,10 @@ Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
       `test_gemini.py` smoke test, and an ADK hello-world agent (`agents/hello_agent/`).
       Uses a free Google AI Studio API key (`GOOGLE_API_KEY`, no billing account) instead
       of Vertex AI — same `google-genai` SDK either way, so switching to Vertex later is
-      a one-line env change (`GOOGLE_GENAI_USE_VERTEXAI=TRUE`), not a rewrite. Waiting on
-      the user to generate a key at https://aistudio.google.com and drop it in
-      `agents/.env` to actually run it.
+      a one-line env change (`GOOGLE_GENAI_USE_VERTEXAI=TRUE`), not a rewrite.
+      **Confirmed working live** — `python test_gemini.py` returned a clean response from
+      `gemini-3.5-flash` with real token counts. Model ID confirmed correct. Next: run
+      `adk run hello_agent` to confirm the ADK CLI layer too, then start Phase 2.
 - [ ] **Timeline strategy** — see the calendar reality check above; needs an answer before
       Day 1 starts, since it changes how aggressively to cut scope. Starting from a
       zero GCP setup (just confirmed above) makes this more pressing, not less.
