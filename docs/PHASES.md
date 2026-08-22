@@ -160,11 +160,9 @@ work wraps)?
 
 Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
 
-- [ ] **🔴 ACTION FOR YOU, TODAY — request the $150 Google Cloud credit.** This has to be
-      done by you personally (the form ties to your own Google identity) — I can't submit
-      it on your behalf. Form: `https://forms.gle/riGhgDSHkHeMx8Ca6`. Deadline **Aug 28,
-      2026, 12:00 PM PT — "or while supplies last"** — six days out, separate from the
-      project deadline, ~72 business hours to process. Do this before anything else today.
+- [x] **$150 Google Cloud credit form submitted** (2026-08-22). Processing takes up to
+      72 business hours — don't block Phase 1 waiting on it; the standard Cloud free
+      trial (separate from this hackathon credit) is enough to start a project today.
 - [x] **BYOF framing** — decided 2026-08-22: no fabricated personal backstory (risks the
       false-information disqualification clause and doesn't hold up under scrutiny
       anyway). Frame honestly around the real operational gap instead, and let the
@@ -174,11 +172,23 @@ Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
       on **Cloud Run**, not Vercel — keeps one platform, one story for the "visible Google
       Cloud deployment" judging criterion, and avoids a second integration surface under
       a 9-day clock. Full reasoning in `docs/PLAN.md`.
-- [ ] **GCP project status — confirmed starting from zero (2026-08-22).** No project, no
-      billing, no `gcloud` CLI installed locally (checked). Phase 1 Day 1 needs to budget
-      real time for: account/project creation, billing link, the $150 credit landing,
-      installing `gcloud` (or working from Cloud Shell instead), and enabling the Vertex
-      AI / Firestore / Pub/Sub / Cloud Run / Cloud Scheduler APIs.
+- [ ] **🔴 GCP billing verification blocked (in progress, 2026-08-22).** Free-trial
+      billing setup fails with `OR_BACR2_31` — both a SadaPay virtual and physical
+      Mastercard declined with the identical error. Root cause: fintech/prepaid card
+      BINs (SadaPay, NayaPay) are broadly blocked by Google's cloud-billing fraud checks,
+      independent of which specific card. A Google Cloud Support ticket has been filed
+      asking for manual identity verification instead of card verification; first reply
+      was a generic canned response, a follow-up was sent pushing back on it (see
+      `docs/PROGRESS.md` for the full exchange). **This blocks Cloud Run / Firestore /
+      Pub/Sub specifically — it does not block Gemini API work (see below).**
+- [x] **Gemini API access unblocked without waiting on GCP billing (2026-08-22).** Set up
+      `agents/` locally: `google-adk` + `google-genai` installed and import-clean, a
+      `test_gemini.py` smoke test, and an ADK hello-world agent (`agents/hello_agent/`).
+      Uses a free Google AI Studio API key (`GOOGLE_API_KEY`, no billing account) instead
+      of Vertex AI — same `google-genai` SDK either way, so switching to Vertex later is
+      a one-line env change (`GOOGLE_GENAI_USE_VERTEXAI=TRUE`), not a rewrite. Waiting on
+      the user to generate a key at https://aistudio.google.com and drop it in
+      `agents/.env` to actually run it.
 - [ ] **Timeline strategy** — see the calendar reality check above; needs an answer before
       Day 1 starts, since it changes how aggressively to cut scope. Starting from a
       zero GCP setup (just confirmed above) makes this more pressing, not less.

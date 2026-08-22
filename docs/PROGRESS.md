@@ -75,3 +75,45 @@ near-term action items surfaced.
   now the single most time-sensitive action item (form deadline Aug 28, 12pm PT, and it's
   a step only the user can do — tied to their own Google identity). Flagged as the very
   first action, ahead of any other Phase 1 work.
+- **$150 credit form submitted.**
+
+## 2026-08-22 — GCP free-trial billing blocked (SadaPay declined, support ticket filed)
+
+- Free-trial billing setup failed with `OR_BACR2_31` on the user's SadaPay virtual
+  Mastercard. Tried the physical SadaPay Mastercard too — same error. Researched the
+  cause: fintech/prepaid card BINs (SadaPay, NayaPay) are broadly blocked by cloud
+  providers' fraud checks for metered/postpaid billing, compounded by Pakistani banks'
+  mandatory OTP-based 3D Secure, which Google Cloud's verification flow rejects. Both
+  cards failing identically points to an issuer-level block, not a per-card issue.
+- Filed a Google Cloud "Account Suspension / payment method error" support inquiry
+  (helped draft the form fields: purpose, business/website = N/A individual entrant,
+  additional info requesting manual ID-based verification as an alternative to card
+  verification, referencing the already-submitted $150 credit request for legitimacy).
+- First support reply (agent "Rea") was a generic canned response pointing to the list of
+  supported card networks — didn't address the manual-verification request. Sent a
+  follow-up pointing out SadaPay's card **is** on that supported-network list (Mastercard
+  debit), so the block is issuer-specific, and re-asked for manual verification. Awaiting
+  reply (48h stated response time).
+- **Decision: don't let this block all progress.** Set up the Gemini API path via Google
+  AI Studio (no billing account required) so agent/prompt development can proceed
+  regardless of how the billing ticket resolves — see the next entry.
+
+## 2026-08-22 — Phase 1 kickoff: local ADK + Gemini scaffolding (agents/)
+
+Built out `agents/` so Phase 1 agent work can start today without GCP billing:
+- `agents/requirements.txt` (`google-adk`, `google-genai`, `python-dotenv`) — installed
+  into the local `.venv` cleanly (`google-adk` 2.7.1, `google-genai` 2.19.0), both import
+  without errors.
+- `agents/config.py` — shared `.env` loader (`GOOGLE_API_KEY`, `GEMINI_MODEL`, defaulting
+  to `gemini-3.5-flash` per the hackathon's mandatory-tech + cost-guidance).
+- `agents/test_gemini.py` — one-command smoke test to confirm an API key works before
+  building anything on top of it.
+- `agents/hello_agent/` — minimal ADK agent (`root_agent`), runnable via `adk run
+  hello_agent` or `adk web` once a key is in `agents/.env`.
+- Verified: `.gitignore` correctly excludes any real `agents/.env` while still tracking
+  `agents/.env.example` (checked both directions with `git check-ignore` / `git add`).
+- **Deliberately built on the Gemini Developer API (AI Studio key), not Vertex AI** —
+  same `google-genai` SDK underneath, so flipping to Vertex AI later (once GCP billing
+  clears) is a one-line env change (`GOOGLE_GENAI_USE_VERTEXAI=TRUE`), not a rewrite.
+- Not yet done: user needs to generate a key at https://aistudio.google.com and paste it
+  into `agents/.env` — nothing above has been run against a real key yet.
