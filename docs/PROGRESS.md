@@ -392,9 +392,40 @@ brand-guide mockup CSS (not a generic template), reading live from `agents/stora
 - **Found and fixed a real CSS bug from the screenshot**: a redundant "CAUGHT" text label
   next to the confidence percentage visually overlapped the paw-stamp graphic on
   auto-actioned cards. Removed it — the stamp alone already says that.
-- **Deliberately not built**: Recall Radar map, streak counter, and the animated
-  pin-and-string connector between a specific recall and its matching evidence card (the
-  original mockup hand-positions that for exactly 2 cards; doing it generically for a
-  variable-length list needs real layout logic). All three are explicitly named as the
-  first things to cut under time pressure in `docs/PLAN.md`'s own priority list — correct
-  to defer them ahead of harder remaining work, not an oversight.
+- **Deliberately not built (at the time)**: Recall Radar map, streak counter, and the
+  animated pin-and-string connector between a specific recall and its matching evidence
+  card. Named as the first things to cut under time pressure in `docs/PLAN.md`'s own
+  priority list — correct to defer initially, not an oversight.
+
+## 2026-08-23 — Recall Radar + streak counter built, dashboard Phase 7 fully done
+
+User asked to keep building and clarified the scope question: GCP is needed only for
+going live (Cloud Run, real Firestore, real Pub/Sub, Cloud Scheduler) — nothing else in
+the build needs a new account; Gemini's already live via the free AI Studio key.
+
+- **`agents/dashboard/us_state_positions.py`** — approximate percent-based US state
+  centroids (a stylized grid, not a real geographic projection — matches what
+  `docs/PLAN.md` already scoped as "doesn't need to be precise"). Unrecognized/free-text
+  state values ("Nationwide", a boilerplate sentence) are skipped, not guessed at a
+  position — same "don't guess" discipline as everywhere else in this build.
+- **Streak counter** — days since the most recent auto-actioned match, falling back to
+  days since business registration if there's no match yet, 0 (not a fabricated number)
+  if neither exists.
+- **Radar pings** — plotted from each case's real `distributionStates`; rejected matches
+  correctly excluded (matches the corkboard's own filtering), auto-actioned vs.
+  pending-review get different ping colors.
+- Added the original mockup's stylized US outline SVG as a static background behind the
+  pings — found and fixed a real bug immediately after adding it: the render function
+  was doing `radar.innerHTML = ''` on every 5s refresh, which would have wiped the SVG
+  along with the old pings. Fixed by giving the pings their own child container
+  (`#radar-pings`) so refreshes only touch what's supposed to change.
+- **8 new tests** (5 in `test_us_state_positions.py`, 3 more in `test_server.py` for
+  radar filtering and both streak branches) — 12 total in `dashboard/` now, 37 offline
+  across the whole project.
+- **Re-verified visually with Playwright** (screenshot before/after adding the SVG
+  outline) — confirmed the map renders, pings sit at the correct east-coast cluster for
+  the real MD/VA/NC data, zero console errors.
+- **Phase 7 is now fully done** — every checklist item in `docs/PHASES.md` checked. Only
+  remaining dashboard-adjacent item is the animated pin-and-string connector, which is
+  cosmetic and needs real per-pair layout logic for a variable-length list — correctly
+  low priority.

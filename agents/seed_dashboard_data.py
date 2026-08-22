@@ -25,7 +25,12 @@ import normalize  # noqa: E402
 import openfda_client  # noqa: E402
 import storage  # noqa: E402
 
-DEMO_BUSINESS = {"id": "demo-biz-1", "name": "Maple & Vine Kitchen", "address": "12 Main St, Springfield"}
+DEMO_BUSINESS = {
+    "id": "demo-biz-1",
+    "name": "Maple & Vine Kitchen",
+    "address": "12 Main St, Springfield",
+    "registeredAt": "2026-07-01T00:00:00+00:00",
+}
 
 # Real Gemini outputs captured earlier this session (see docs/PROGRESS.md, 2026-08-23) —
 # not invented for this script.

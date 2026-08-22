@@ -59,7 +59,7 @@ work wraps)?
 | 4 — Invoice ingestion (CSV + multimodal image) | Done (local) |
 | 5 — Matching Agent (Gemini reasoning + confidence routing) | Core logic done, validated |
 | 6 — Action Agent + artifacts (checklist/notification/compliance PDF) | Done (local) |
-| 7 — Dashboard / UI (Scout corkboard) | Core done (local), polish items remain |
+| 7 — Dashboard / UI (Scout corkboard) | Done (local) |
 | 8 — Quantitative experiment (N=30 baseline vs agent) | Not started |
 | 9 — Failure-injection rehearsal + Architectural Design checklist | Not started |
 | 10 — Demo video, docs polish, submission | Not started |
@@ -213,23 +213,32 @@ work wraps)?
       (screenshot before/after, review queue count 1→0, PDF + compliance_log entry
       confirmed on disk).
 - [x] **Paw-stamp "CAUGHT IT" on confirmed matches** — implemented, visually verified.
-- [ ] Recall-Free Streak counter — not built yet (metrics rollup exists, just not
-      surfaced as a streak specifically).
-- [ ] Recall Radar map (approximate state centroids) — not built.
+- [x] **Recall-Free Streak counter** (2026-08-23) — days since the most recent
+      auto-actioned match (0 if one landed today), falling back to days since the
+      business's `registeredAt` if there's no match yet at all. No guessing when neither
+      is available (returns 0, not a fabricated number).
+- [x] **Recall Radar map** — approximate US state centroids
+      (`agents/dashboard/us_state_positions.py`), plotted from each case's real
+      `distributionStates`. Unrecognized/free-text state values (e.g. "Nationwide") are
+      skipped rather than guessed at a position. Includes the stylized map-outline SVG
+      from the original mockup for visual context, not just bare pings on black.
 - [x] Compliance record kept visually distinct from the fun UI — already true by
       construction (Phase 6's PDF has zero Scout branding, verified visually).
-- **4 API tests passing** (`agents/dashboard/test_server.py`, FastAPI `TestClient`, no
-  live server/network needed) — empty state, matches+review-queue joins, the full
-  confirm→Action-Agent→compliance-log path, and a 404 on an unknown match.
+- **12 API/logic tests passing** (`agents/dashboard/test_server.py` +
+  `test_us_state_positions.py`, FastAPI `TestClient`, no live server/network needed) —
+  empty state, matches+review-queue joins, the full confirm→Action-Agent→compliance-log
+  path, a 404 on an unknown match, radar filtering (rejected matches excluded), and both
+  streak-calculation branches (match-today vs. no-matches-yet fallback).
 - **Visually verified with a real headless browser** (Playwright, installed this session
   since neither `chromium-cli` nor Node.js were available here) — not just "the code
   looks right." Screenshotted the case board, the review modal, and the state after a
   real confirm click; checked the browser console for JS errors (none). See
   `docs/PROGRESS.md` for what the screenshots showed, including one real CSS bug found
   and fixed (a "CAUGHT" label overlapping the paw stamp).
-- Deliberately deferred: Recall Radar and streak counter are cosmetic (explicitly named
-  as the *first* things to cut under time pressure in `docs/PLAN.md`'s priority list) —
-  correctly not spending time on them before the harder remaining phases.
+- Still not built: the animated pin-and-string connector between a specific recall poster
+  and its matching evidence card (the original mockup hand-positions that for exactly 2
+  cards; doing it generically for a variable-length list needs real layout logic, and
+  it's cosmetic — lowest priority per `docs/PLAN.md`'s own cut list).
 
 ## Phase 8 — Quantitative experiment
 

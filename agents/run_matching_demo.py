@@ -34,7 +34,12 @@ import storage  # noqa: E402
 
 KNOWN_RECALLS = ["H-0552-2026", "H-1219-2026"]
 INVOICE_DIR = AGENTS_DIR / "sample_data" / "invoices"
-DEMO_BUSINESS = {"id": "demo-biz-1", "name": "Maple & Vine Kitchen", "address": "12 Main St, Springfield"}
+DEMO_BUSINESS = {
+    "id": "demo-biz-1",
+    "name": "Maple & Vine Kitchen",
+    "address": "12 Main St, Springfield",
+    "registeredAt": "2026-07-01T00:00:00+00:00",
+}
 
 
 def main() -> None:

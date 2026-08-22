@@ -46,6 +46,37 @@
     margin:6px 0 14px; color:#5a5546; display:flex; justify-content:space-between;
   }
 
+  .streak{
+    background:var(--green); color:var(--enamel); padding:10px 18px;
+    border-radius:6px; display:flex; align-items:center; gap:10px;
+    box-shadow:0 3px 0 rgba(0,0,0,0.15);
+  }
+  .streak .num{font-family:'Anton'; font-size:28px; line-height:1;}
+  .streak .lbl{font-size:11px; letter-spacing:1px; text-transform:uppercase; opacity:0.85;}
+
+  .radar{
+    background:var(--steel); border-radius:4px; padding:16px; height:200px;
+    position:relative; overflow:hidden;
+  }
+  .radar svg{width:100%; height:100%; position:absolute; top:0; left:0;}
+  .ping{
+    position:absolute; width:10px; height:10px; border-radius:50%;
+    background:var(--amber); box-shadow:0 0 0 0 rgba(226,153,61,0.7);
+    animation:pulse 2.2s infinite; transform:translate(-50%,-50%);
+  }
+  .ping.match{background:var(--rust); box-shadow:0 0 0 0 rgba(179,74,46,0.8); animation:pulse-match 2.2s infinite;}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(226,153,61,0.55);}
+    70%{box-shadow:0 0 0 14px rgba(226,153,61,0);}
+    100%{box-shadow:0 0 0 0 rgba(226,153,61,0);}
+  }
+  @keyframes pulse-match{
+    0%{box-shadow:0 0 0 0 rgba(179,74,46,0.6);}
+    70%{box-shadow:0 0 0 14px rgba(179,74,46,0);}
+    100%{box-shadow:0 0 0 0 rgba(179,74,46,0);}
+  }
+  .radar-empty{color:#8a8f8c; font-size:11px; font-style:italic; position:absolute; bottom:10px; left:16px;}
+
   .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
   .stat{background:var(--enamel); border:1px solid var(--line); border-radius:4px; padding:10px; text-align:center;}
   .stat .v{font-family:'Anton'; font-size:22px;}
@@ -139,10 +170,25 @@
       <p id="business-tagline">Scout is on the case</p>
     </div>
   </div>
+  <div class="streak">
+    <div class="num" id="streak-num">0</div>
+    <div class="lbl">Days<br>Clean Streak</div>
+  </div>
 </header>
 
 <div class="grid">
   <div>
+    <div class="panel">
+      <h2>Recall Radar <span class="mono" style="font-size:10px;">LIVE</span></h2>
+      <div class="radar">
+        <svg viewBox="0 0 400 230">
+          <path d="M40,60 L90,40 L160,45 L210,30 L260,45 L320,55 L360,90 L350,140 L300,170 L230,190 L160,185 L100,170 L60,140 Z"
+                fill="none" stroke="#4a5058" stroke-width="1.5"/>
+        </svg>
+        <div id="radar-pings"></div>
+      </div>
+    </div>
+
     <div class="panel">
       <h2>Recall Activity</h2>
       <div class="stats">
@@ -199,9 +245,24 @@ async function loadState() {
 
 function render(data) {
   document.getElementById('business-tagline').textContent = `Scout is on the case — ${data.business.name || 'your business'}`;
+  document.getElementById('streak-num').textContent = data.streakDays;
   document.getElementById('stat-checked').textContent = data.metrics.recallsChecked;
   document.getElementById('stat-matches').textContent = data.metrics.matchesFound;
   document.getElementById('stat-time').textContent = data.metrics.avgTimeToDetectionSeconds + 's';
+
+  const radarPings = document.getElementById('radar-pings');
+  radarPings.innerHTML = '';
+  if (data.radar.length === 0) {
+    radarPings.innerHTML = '<div class="radar-empty">No distribution-area data on the current cases.</div>';
+  }
+  data.radar.forEach(ping => {
+    const dot = document.createElement('div');
+    dot.className = 'ping' + (ping.type === 'match' ? ' match' : '');
+    dot.style.top = ping.y + '%';
+    dot.style.left = ping.x + '%';
+    dot.title = ping.state;
+    radarPings.appendChild(dot);
+  });
 
   const reviewList = document.getElementById('review-list');
   reviewList.innerHTML = '';
