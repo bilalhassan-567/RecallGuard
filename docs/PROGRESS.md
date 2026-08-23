@@ -609,3 +609,29 @@ building Phase 9. Did all three:
     tested, not just planned.
 - Fixed the same Windows-console mojibake pattern in `naive_baseline.py`'s output
   (`sys.stdout.reconfigure`, same root-cause fix as everywhere else this session).
+
+## 2026-08-24 — Pushing to GitHub: README rewrite, docs/submission/ made private
+
+User asked to push to GitHub, explicitly asking for the repo to be "polished real
+good." Did the polish work before anything went public:
+
+- **Rewrote the root README.md** — the previous version predated any code and still
+  said "documentation / pre-build," with no spin-up instructions. Replaced with real
+  status per phase, what's actually working (full local pipeline, dashboard, N=30
+  eval, 61+ tests), and spin-up commands — every command in it was actually run and
+  verified working first (including `unittest discover` in all 5 test directories),
+  not just assumed correct because it looked right.
+- **Installed `gcloud` earlier and now `gh` CLI too** (winget — turned out `gh` was
+  already present via winget's package cache, just not on this session's PATH).
+  Authenticated via the device-code flow (`gh auth login --web`) — the user completed
+  it in the browser.
+- **User asked to double-check nothing unnecessary was about to be pushed.** Listed
+  every tracked file (`git ls-files`) — clean, no stray `__pycache__`/junk, no
+  `CLAUDE.md`/`master-workout` leakage. The one real call to make: `docs/submission/`
+  (demo video script, Devpost description draft, submission checklist) — genuinely our
+  own internal pitch material, not judge-facing technical docs. **Decided: keep it
+  private**, same treatment as `master-workout/` — unlike `PLAN.md`/`PROGRESS.md`/
+  `PHASES.md`, which stay public specifically because they demonstrate the engineering
+  process the judging criteria reward. Added `docs/submission/` to `.gitignore`,
+  untracked it with `git rm --cached` (files stay on disk, just no longer pushed), and
+  updated the corresponding rule in `CLAUDE.md`.

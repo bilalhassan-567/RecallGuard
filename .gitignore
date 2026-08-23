@@ -3,6 +3,11 @@
 # Public-facing docs live in docs/ (tracked); this stays local only.
 docs/master-workout/
 
+# Our own draft pitch/demo-script/submission text — internal working docs, not
+# something a repo visitor or judge needs to browse (unlike PLAN.md/PROGRESS.md/etc,
+# which stay public since they demonstrate the actual engineering process).
+docs/submission/
+
 # Agent rules/instructions file for this repo — internal, not for judges.
 CLAUDE.md
 
