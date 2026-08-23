@@ -475,3 +475,21 @@ claims didn't check out.
 **Net effect:** the parallel session's actual research/writing was worth keeping — the
 verification-before-trust habit just meant checking its claims rather than repeating
 them, which caught two real inaccuracies before they became false entries in this log.
+
+## 2026-08-23 — Confirmed: no shared-cost risk with the user's other Firebase project
+
+User has a separate existing project (`chhaon-hackathon`, a different hackathon app)
+already running on Firestore, and asked whether adding RecallGuard would risk incurring
+charges against it. Checked the actual billing mechanics rather than assume:
+**Firestore's free tier is per-project** (a new project gets a fully separate
+allocation — confirmed via Firebase/Google Cloud docs), but **Cloud Run's free tier is
+pooled per *billing account*, not per project** — worth knowing, though at hackathon
+scale two low-traffic apps are very unlikely to approach the combined limit together.
+
+Also checked whether chhaon-hackathon's billing status could unlock anything for our
+stuck SadaPay ticket (if it had a working Blaze billing account, we could've linked
+RecallGuard's new project to that same account and skipped the card fight entirely) —
+**confirmed it's on the free Spark plan, no billing account attached at all**, so this
+doesn't help. No plan changes: RecallGuard still gets its own separate GCP project (per
+`docs/GCP_SETUP.md`, unchanged), and still needs the same SadaPay support ticket
+resolved before Cloud Run/Firestore/Pub/Sub can go live for either project's benefit.
