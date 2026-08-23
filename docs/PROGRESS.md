@@ -635,3 +635,19 @@ good." Did the polish work before anything went public:
   process the judging criteria reward. Added `docs/submission/` to `.gitignore`,
   untracked it with `git rm --cached` (files stay on disk, just no longer pushed), and
   updated the corresponding rule in `CLAUDE.md`.
+- **Pushed live**: https://github.com/bilalhassan-567/RecallGuard (public). Verified the
+  actual pushed tree via the GitHub API directly (`gh api .../git/trees/master`), not
+  just trusted the local `git push` — confirmed no `CLAUDE.md`, no `master-workout/`, no
+  `docs/submission/`, no secrets, nothing unexpected made it up.
+- **Full repo polish, requested explicitly** — added `LICENSE` (MIT, since the repo had
+  none and GitHub's own "About" panel flags this), 12 GitHub topics for discoverability
+  (`gemini`, `google-adk`, `ai-agents`, `hackathon`, etc.), and license/Python/tests/
+  hackathon badges at the top of the README. Verified all of it actually landed via the
+  GitHub API afterward, not just assumed from the `gh` command exiting cleanly.
+  **Found and fixed a real bug the privacy change (above) had introduced**: the docs
+  index table still linked to `docs/submission/`, which was now gitignored — would have
+  been a dead link on GitHub for anyone who clicked it. Checked the other tracked docs
+  for the same issue (`docs/PLAN.md`, `PHASES.md`, `PROGRESS.md` all mention
+  `docs/submission/` too, but only as plain-text narrative, not actual markdown
+  hyperlinks — confirmed via grep, left those alone since they're accurate history, not
+  broken links).
