@@ -295,6 +295,22 @@ Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
       was a generic canned response, a follow-up was sent pushing back on it (see
       `docs/PROGRESS.md` for the full exchange). **This blocks Cloud Run / Firestore /
       Pub/Sub specifically — it does not block Gemini API work (see below).**
+- [x] **GCP deployment prep done ahead of billing clearing (2026-08-23).** A parallel
+      Claude session (the desktop/laptop app, working on the same project) produced
+      `docs/GCP_SETUP.md` (a two-part runbook — do-now vs. do-once-billing-clears),
+      `firestore.rules` (businessId-scoped, matches `docs/DATA_MODEL.md`),
+      `firestore.indexes.json`, `Dockerfile`, and `.dockerignore`. **Its own summary
+      overclaimed two things, corrected here rather than taken on faith:** it said the
+      files were "written into your project folder" (they were actually sitting in
+      `Downloads/`, not integrated — moved into the repo at the right paths just now)
+      and that it had installed the `gcloud` CLI (verified false — not on PATH or in any
+      standard Windows install location). Likely explanation: the desktop app doesn't
+      have the same direct filesystem/shell access this Claude Code session does, so its
+      own report of what happened didn't match the real machine. **`gcloud` CLI is now
+      actually installed** (via `winget install --id Google.CloudSDK`, this session,
+      verified working in both PowerShell and Git Bash) — real progress, not a repeated
+      claim. Docker is still not installed (optional — `gcloud run deploy --source .`
+      builds remotely via Cloud Build and doesn't need it).
 - [x] **Gemini API access unblocked without waiting on GCP billing (2026-08-22).** Set up
       `agents/` locally: `google-adk` + `google-genai` installed and import-clean, a
       `test_gemini.py` smoke test, and an ADK hello-world agent (`agents/hello_agent/`).

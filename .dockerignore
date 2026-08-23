@@ -1,0 +1,11 @@
+# Keep the Cloud Run build context small and secret-free.
+.git/
+.idea/
+.venv/
+.claude/
+docs/
+**/__pycache__/
+**/*.pyc
+agents/local_data/
+agents/.env
+*.md

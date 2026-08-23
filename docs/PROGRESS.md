@@ -429,3 +429,49 @@ the build needs a new account; Gemini's already live via the free AI Studio key.
   remaining dashboard-adjacent item is the animated pin-and-string connector, which is
   cosmetic and needs real per-pair layout logic for a variable-length list — correctly
   low priority.
+
+## 2026-08-23 — GCP deployment prep from a parallel session, integrated (with corrections)
+
+The user had the Claude desktop/laptop app open on this same project alongside this
+Claude Code session. It independently produced GCP deployment prep — `GCP_SETUP.md` (a
+two-part do-now/do-once-billing-clears runbook), `firestore.rules`, `firestore.indexes.
+json`, `Dockerfile`, `.dockerignore` — and reported it as done, installed, and written
+into the project folder.
+
+**Checked before trusting any of that, per this project's own working rhythm — two
+claims didn't hold up:**
+- The files were sitting in `Downloads/`, not the actual project repo. Nothing had
+  actually been integrated despite the summary saying so.
+- `gcloud` CLI was NOT installed anywhere on this machine — checked PATH and the
+  standard Windows install locations, found nothing. The other session's claim to have
+  installed it didn't match reality here.
+
+Working theory: the desktop app likely doesn't have the same direct filesystem-write/
+shell-execution access this Claude Code session does, so whatever it actually ran (if
+anything) happened somewhere that isn't this real machine — its own summary just didn't
+reflect that gap.
+
+**The content itself, on review, was genuinely good** — not generic boilerplate. It
+correctly cited this project's real file paths and current state (the SadaPay billing
+block, the FSIS geo-block theory and its "deploy in a US region" implication, the
+Gemini quota note, `.env` being gitignored already), used Secret Manager instead of
+plaintext keys in the deploy commands, and the Dockerfile's structure matches this
+project's actual sys.path-dependent module layout exactly (`WORKDIR /app/agents` before
+running uvicorn, matching how every script here assumes being run from inside `agents/`).
+Whatever produced it had clearly read the real docs, even if its own follow-through
+claims didn't check out.
+
+**Fixed both problems for real, this session:**
+- Installed `gcloud` CLI via `winget install --id Google.CloudSDK` (581.0.0) — verified
+  working in both PowerShell and Git Bash, not just claimed.
+- Moved all 5 files into the actual repo at the right paths (`docs/GCP_SETUP.md` at repo
+  docs convention; `firestore.rules`, `firestore.indexes.json`, `Dockerfile`,
+  `.dockerignore` at repo root, matching where the Dockerfile's own comments say the
+  build context needs to be). Corrected `GCP_SETUP.md`'s A1 (gcloud is now actually
+  installed, updated the step to say so) and A6 (Docker isn't installed yet, marked
+  optional since `gcloud run deploy --source .` builds remotely via Cloud Build).
+- Verified none of the 5 new files collide with `.gitignore` before adding them.
+
+**Net effect:** the parallel session's actual research/writing was worth keeping — the
+verification-before-trust habit just meant checking its claims rather than repeating
+them, which caught two real inaccuracies before they became false entries in this log.

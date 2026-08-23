@@ -1,0 +1,61 @@
+rules_version = '2';
+
+// RecallGuard — Firestore security rules.
+//
+// Matches docs/DATA_MODEL.md. The hard requirement from that doc: "every read/write
+// scoped to the caller's businessId — no cross-business reads, ever." Everything below
+// exists to enforce that one rule.
+//
+// Auth model assumed here: each business user signs in (Firebase Auth / Identity
+// Platform) and their businessId is stamped on their auth token as a custom claim
+// (request.auth.token.businessId), set server-side when the account is provisioned —
+// never trust a businessId the client sends in the request body. Until real auth is
+// wired up (Phase 1 says "Firestore security rules drafted" — drafted, not yet backed by
+// real auth), the Cloud Run backend should talk to Firestore with a service account
+// (which these rules don't restrict) and *not* rely on client-side Firestore access.
+// These rules are what protects you the day the dashboard starts reading Firestore
+// directly from the browser instead of through the FastAPI backend.
+
+function signedIn() {
+  return request.auth != null;
+}
+
+function ownsBusiness(businessId) {
+  return signedIn() && request.auth.token.businessId == businessId;
+}
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // businesses/{businessId} — profile doc, and everything nested under it
+    // (invoices, matches, review_queue, compliance_log) inherits the same scoping.
+    match /businesses/{businessId} {
+      allow read, write: if ownsBusiness(businessId);
+
+      match /{subcollection}/{docId} {
+        allow read, write: if ownsBusiness(businessId);
+      }
+    }
+
+    // recalls/{recallId} — source-agnostic, not business-scoped by design (every
+    // business needs to be able to read every recall to check it against their own
+    // invoices). Written only by the Monitor agent's service account, never by a client.
+    match /recalls/{recallId} {
+      allow read: if signedIn();
+      allow write: if false; // backend service account only (bypasses rules)
+    }
+
+    // metrics/{businessId}_daily — the doc ID is prefixed with the businessId; rules
+    // can't pattern-match that prefix directly, so metrics reads/writes should go
+    // through the backend (service account), not client-side Firestore. Deny by
+    // default here rather than leaving it open.
+    match /metrics/{metricId} {
+      allow read, write: if false; // backend service account only (bypasses rules)
+    }
+
+    // Deny everything else explicitly.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
