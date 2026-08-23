@@ -1,5 +1,10 @@
 # RecallGuard
 
+![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)
+![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
+![Tests](https://img.shields.io/badge/tests-61%20passing-brightgreen.svg)
+![Hackathon](https://img.shields.io/badge/hackathon-All%20Things%20Agentic-orange.svg)
+
 An autonomous agent that watches FDA and USDA food recall feeds, fuzzy-matches them
 against a business's own invoices with Gemini, and drafts a pull-checklist, a
 notification, and a timestamped compliance record — flagging anything ambiguous for
@@ -132,5 +137,8 @@ mobile app, no 50-state legal certification claim).
 | [docs/EXPERIMENT.md](docs/EXPERIMENT.md) | N=30 evaluation design + live results |
 | [docs/RISK_REGISTER.md](docs/RISK_REGISTER.md) | Known risks + mitigations |
 | [docs/GCP_SETUP.md](docs/GCP_SETUP.md) | Cloud deployment runbook |
-| [docs/submission/](docs/submission/) | Devpost text, demo script, submission checklist |
 | [agents/README.md](agents/README.md), [agents/dashboard/README.md](agents/dashboard/README.md), [agents/experiment/README.md](agents/experiment/README.md) | Per-component quick-starts |
+
+## License
+
+[MIT](LICENSE).
