@@ -504,3 +504,63 @@ actual different card. Two days and two round-trips spent on this path; decided 
 keep waiting on a third reply — pivoting to solving it directly (find any working card,
 or have someone else's Google account back the billing while the user keeps full
 technical/IAM control) rather than re-opening the ticket again.
+
+## 2026-08-24 — Decision: user will source a working card themselves
+
+User's call: they'll handle finding a working payment method personally rather than
+spending more of this session on it — keep building everything that doesn't need GCP in
+the meantime. Moving on to Phase 8 (the N=30 experiment harness), which is fully
+buildable without GCP; just needs Gemini quota paced sensibly across the run (see the
+2026-08-23 quota-exhaustion entry above — free tier resets daily, so today is a fresh
+20-request budget for `gemini-3.5-flash`).
+
+## 2026-08-24 — Phase 8 experiment harness built, 19/30 agent-side scored
+
+Built the full N=30 evaluation harness in `agents/experiment/`:
+
+- **`select_ground_truth_recalls.py`** — fetched 1,973 real candidate recalls from
+  openFDA (2025-06-01 to 2026-08-24, free/unlimited, no Gemini), selected 30 stratified
+  by classification (12/12/6, target ratios from `docs/EXPERIMENT.md`), deduplicated by
+  recalling firm for product/supplier diversity. Frozen output:
+  `ground_truth_recalls.json` — genuinely diverse real products (blue cheese, okra,
+  ice pops, shrimp paste, biscotti, moringa powder, etc.), not a narrow easy set.
+- **Invoice corpus** (`agents/experiment/invoices/`, 3 CSVs, 37 lines) — hand-authored
+  one realistic abbreviated true-positive line per recall (same messy-invoice style as
+  the earlier 5-sample set), plus 7 distractors: 3 near-misses (same brand/category,
+  wrong specific product — reusing the exact false-positive-avoidance test pattern from
+  Phase 5) and 4 easy negatives. One shared corpus checked against every recall, not one
+  invoice per recall — matches how the real system actually works.
+- **`run_benchmark.py`** — checkpointed against the 20/day free-tier Gemini quota (hit
+  this for real on 2026-08-23): each completed recall appends to
+  `benchmark_results.jsonl` immediately, already-done recalls are skipped on the next
+  run. Ran it in three paced batches today (5, then 10, then 4) rather than attempting
+  all 30 at once — **19/30 done**, stopped deliberately with quota margin left rather
+  than risking a mid-run failure on recall #20.
+- **`summarize_results.py`** — scores against `invoice_ground_truth.json` with explicit
+  definitions for the distinctions that are easy to get subtly wrong: missed (rejected
+  OR never appeared) vs. detected (auto-actioned OR escalated), and dangerous false
+  positive (wrongly auto-actioned — the case that actually matters for "zero
+  high-confidence false positives") vs. soft false positive (wrongly escalated, caught
+  by a human before anything real happens). Refactored into a pure `compute_metrics()`
+  function specifically so this logic could be tested directly rather than trusted by
+  eye — 9 tests, all passing.
+- **`run_human_baseline.py` + `summarize_baseline.py`** — the human half. Built as a real
+  timed CLI tool (same recall order, same invoice list, same scoring definitions as the
+  agent side) rather than "go do this by hand with a stopwatch" — a repeatable tool is
+  what makes the two sides actually comparable. Resumable via Ctrl-C. **Not run yet** —
+  this is the one piece that needs the user's own time, not more coding, and wasn't
+  fabricated to fill in the gap.
+- **Results so far (19/30, agent side, partial):** 19/19 detected, 19/19 correctly
+  auto-actioned, 0 missed, 0 dangerous false positives, 0 soft false positives, 100%
+  precision, 100% recall, ~12.7s mean time-to-detection. Genuinely measured, not
+  cherry-picked — two near-miss distractors were tested against their real related
+  recalls in this exact batch and correctly rejected both times. Logged in
+  `docs/EXPERIMENT.md` explicitly labeled as in-progress/partial, per this project's own
+  reporting-discipline rule: show real partial numbers rather than withhold until
+  "finished," which would risk looking retroactively cleaned up.
+- Fixed the same Windows-console mojibake issue in `run_benchmark.py`'s output (root
+  cause, `sys.stdout.reconfigure`, not per-character patching — same fix pattern as
+  `run_matching_demo.py` on 2026-08-23).
+- **Remaining:** finish the last 11 agent-side recalls (`run_benchmark.py --limit N`,
+  resumable, paced across quota), and the user needs to actually sit down and run
+  `run_human_baseline.py` once — that's real time that has to be spent, not more code.

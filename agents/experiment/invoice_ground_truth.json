@@ -1,0 +1,46 @@
+{
+  "note": "Ground truth for the N=30 experiment (docs/EXPERIMENT.md). 30 true-positive lines, one per recall in ground_truth_recalls.json (abbreviated realistically, same style as the earlier 5-invoice sample set), plus 7 distractor lines: 3 near-misses (same brand/category, wrong specific product — tests false-positive avoidance) and 4 easy negatives (unrelated products). Frozen alongside ground_truth_recalls.json — don't edit after the experiment runs, for the same reason: changing the answer key after scoring against it defeats the point.",
+  "true_positives": [
+    {"line_text": "ELLSWORTH S/C ONION SEASONING 25LB", "recall_number": "H-0814-2026"},
+    {"line_text": "DEEP SELECT BHINDI CUT OKRA FRZ 12OZ", "recall_number": "H-0270-2026"},
+    {"line_text": "LIPMAN CUCUMBER SUPER SELECT", "recall_number": "H-0030-2025"},
+    {"line_text": "FCF BASIL PESTO BOWTIE PASTA KIT #404637", "recall_number": "H-0090-2026"},
+    {"line_text": "G&G MEX STREET CORN TRAIL MIX 8Z", "recall_number": "H-0835-2026"},
+    {"line_text": "FG20004 CUCUMBER SLICED 16OZ", "recall_number": "H-0264-2025"},
+    {"line_text": "TWIN SIS WHATCOM BLUE CHEESE 2.5LB", "recall_number": "H-0193-2026"},
+    {"line_text": "CUT FRESH FRUIT MIX CANT/HONEY/PINE", "recall_number": "H-0068-2026"},
+    {"line_text": "RM SMOKED MOZZ HOT LINKS XL", "recall_number": "H-0124-2026"},
+    {"line_text": "IL1014A LOTTE CRUNCH CONE STRAWB", "recall_number": "H-0191-2026"},
+    {"line_text": "ORGANIC MORINGA PWDR 15KG BULK GJ96", "recall_number": "H-1180-2026"},
+    {"line_text": "D DIOSES NUEZ ICE POP", "recall_number": "H-1166-2026"},
+    {"line_text": "LOWES FD S/C ONION CHIPS 8Z", "recall_number": "H-0552-2026"},
+    {"line_text": "CARLEYS SOFT BAKE ICED LEMON CKIE 5.34Z", "recall_number": "H-0088-2025"},
+    {"line_text": "L&B CURRY POWDER SWEET", "recall_number": "H-0914-2026"},
+    {"line_text": "KLONG KONE SHRIMP PASTE M 16Z", "recall_number": "H-0389-2026"},
+    {"line_text": "NATURE MILLS VALLARAI RICE MIX 200G", "recall_number": "H-0076-2025"},
+    {"line_text": "USA OG2 LEEKS", "recall_number": "H-0245-2025"},
+    {"line_text": "C SWEET MAAMOUL DATES 8Z", "recall_number": "H-0254-2025"},
+    {"line_text": "SAPORI AMARETTI ALMOND CKIE 175G", "recall_number": "H-0366-2026"},
+    {"line_text": "MARQUESITA CHOC/VAINILLA CAKES", "recall_number": "H-0932-2026"},
+    {"line_text": "SOMA KITCHEN ASAFOETIDA 4Z", "recall_number": "H-0417-2026"},
+    {"line_text": "CELEBRATION SENNA LEAF TEA 24CT", "recall_number": "H-0328-2026"},
+    {"line_text": "CLEAN-TAIL COCONUT BRD BFLY SHRIMP 21/25", "recall_number": "H-0553-2025"},
+    {"line_text": "PRIME NUTR TAURINE PERFORMANCE 125SV", "recall_number": "H-0598-2025"},
+    {"line_text": "CALAIS GRAPE JELLY 1GAL", "recall_number": "H-0252-2025"},
+    {"line_text": "WINDSOR SEA SALT GRINDER RFL 255G", "recall_number": "H-0062-2025"},
+    {"line_text": "TOASTED CHERRY BISCOTTI", "recall_number": "H-0009-2026"},
+    {"line_text": "YOMAN CUCUMBER HUNAN FLAVOR", "recall_number": "H-0525-2026"},
+    {"line_text": "R&M INSTANT MILK TEA HONEYDEW", "recall_number": "F-0931-2025"}
+  ],
+  "near_misses": [
+    {"line_text": "TWIN SIS CHEDDAR CHEESE 2LB", "similar_to_recall": "H-0193-2026", "why": "same brand (Twin Sisters Creamery), different product (cheddar vs. the recalled Whatcom Blue)"},
+    {"line_text": "UNCLE RAYS BBQ KETTLE CHIPS 8OZ", "similar_to_recall": "H-0552-2026", "why": "same category and size, different brand and flavor than the recalled Lowes Foods sour cream & onion"},
+    {"line_text": "LIPTON GREEN TEA 100CT", "similar_to_recall": "H-0328-2026", "why": "same category (tea), different brand/product than the recalled Celebration Herbals Senna Leaf"}
+  ],
+  "easy_negatives": [
+    {"line_text": "BANANAS 40LB CASE"},
+    {"line_text": "GROUND BEEF 80/20 CHUB 10LB"},
+    {"line_text": "NATURE VALLEY GRANOLA BARS 24CT"},
+    {"line_text": "DISH SOAP CONCENTRATE 1GAL"}
+  ]
+}

@@ -60,7 +60,7 @@ work wraps)?
 | 5 — Matching Agent (Gemini reasoning + confidence routing) | Core logic done, validated |
 | 6 — Action Agent + artifacts (checklist/notification/compliance PDF) | Done (local) |
 | 7 — Dashboard / UI (Scout corkboard) | Done (local) |
-| 8 — Quantitative experiment (N=30 baseline vs agent) | Not started |
+| 8 — Quantitative experiment (N=30 baseline vs agent) | In progress — harness done, 19/30 agent-side scored, baseline not started |
 | 9 — Failure-injection rehearsal + Architectural Design checklist | Not started |
 | 10 — Demo video, docs polish, submission | Not started |
 
@@ -242,11 +242,29 @@ work wraps)?
 
 ## Phase 8 — Quantitative experiment
 
-- [ ] 30 real historical recalls pulled (mixed Class I/II/III, mixed hazard types)
-- [ ] Invoice sample set with true positives, near-miss true negatives, easy true negatives
-- [ ] Baseline: manual human check timed + scored
-- [ ] Agent condition run, same 30 cases, metrics recorded
-- [ ] Precision / recall / false-positive rate / false-negative rate / mean time-to-detection reported as measured (no rounding up)
+- [x] **30 real historical recalls pulled** (2026-08-24) — `agents/experiment/
+      ground_truth_recalls.json`, stratified 12 Class I / 12 Class II / 6 Class III,
+      selected live from openFDA, deduplicated by firm for diversity, frozen after
+      selection.
+- [x] **Invoice sample set built** — `agents/experiment/invoices/` (3 CSVs, 37 lines: 30
+      true positives, 3 near-misses, 4 easy negatives), one shared corpus checked
+      against every recall (matches how the real Matching Agent works — one business's
+      invoice history checked against each new recall, not one invoice per recall).
+- [ ] **Baseline: manual human check timed + scored** — tool built and ready
+      (`run_human_baseline.py` + `summarize_baseline.py`, both tested), not yet run by an
+      actual person. This is the one piece that genuinely needs the user's own time, not
+      more coding.
+- [ ] **Agent condition run** — **19/30 done** as of 2026-08-24, checkpointed
+      (`run_benchmark.py --limit N`), paced against the 20/day free-tier Gemini quota.
+      Resume with the same command to finish the remaining 11.
+- [ ] **Metrics reported as measured** — partial numbers already in `docs/EXPERIMENT.md`
+      (19/30: 100% precision, 100% recall, 0 false positives, ~13s mean
+      time-to-detection), explicitly labeled as in-progress, not final. Update once both
+      sides hit 30/30 — don't present the partial numbers as the final result.
+- **14 tests passing** on the scoring logic itself (`test_summarize_results.py` +
+  `test_summarize_baseline.py`) — the missed-vs-rejected-but-present and
+  dangerous-vs-soft-false-positive distinctions are exactly the kind of thing worth
+  testing directly rather than trusting by eye.
 
 ## Phase 9 — Failure handling + Architectural Design checklist
 

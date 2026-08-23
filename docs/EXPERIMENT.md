@@ -33,9 +33,48 @@ triggered an unnecessary supplier notification.
 Report the numbers exactly as measured, even if imperfect — "82% precision, 91% recall, 40
 seconds vs. 22 minutes" reads as credible; a suspiciously clean 100% reads as staged.
 
+## Implementation
+
+Built in `agents/experiment/` — see that folder's `README.md` for the full tool list and
+how to run/resume each half. Summary: 30 real recalls selected live from openFDA
+(stratified 12 Class I / 12 Class II / 6 Class III, one per firm for diversity, frozen
+after selection), checked against one shared 37-line invoice corpus (30 true positives +
+3 near-misses + 4 easy negatives) — matching how the real Matching Agent checks a
+business's recent invoice history against each new recall, not one invoice per recall.
+The agent-side runner is checkpointed against the free-tier Gemini quota (20 req/day,
+see `docs/RISK_REGISTER.md`) so it can run a few recalls at a time across multiple days.
+The human-baseline side is a real timed CLI tool, not an informal stopwatch exercise —
+same recall order, same invoice list, same scoring code as the agent side, so the
+comparison is fair.
+
 ---
 
 ## Results
 
-*(Not yet run — Phase 8. This section gets filled in with the actual measured table once
-the experiment executes, plus a short note on any misses and why.)*
+**In progress as of 2026-08-24 — this is a partial run, not the final numbers.** 19/30
+recalls scored on the agent side, 0/30 on the human baseline side yet. Reporting the
+partial numbers now anyway, per the reporting discipline above — better to show real
+in-progress data than withhold it until it's "finished," which risks looking
+retroactively cleaned up:
+
+| Metric (agent, n=19 of 30) | Value |
+|---|---|
+| Detected | 19/19 |
+| Correctly auto-actioned | 19/19 |
+| Correctly escalated for review | 0/19 |
+| Missed (false negatives) | 0/19 |
+| Dangerous false positives (wrongly auto-actioned) | 0 |
+| Soft false positives (wrongly escalated) | 0 |
+| Precision (on auto-actioned decisions) | 100% |
+| Recall | 100% |
+| Mean time-to-detection | 12.7s |
+
+This is a genuinely clean run, not a cherry-picked one — two of the three near-miss
+distractors (`TWIN SIS CHEDDAR CHEESE 2LB`, `UNCLE RAYS BBQ KETTLE CHIPS 8OZ`) were
+already tested against their real related recalls in this batch and correctly rejected
+both times, which is real evidence the false-positive-avoidance behavior holds, not an
+artifact of an easy test set. That said, 100% across 19 cases with zero human baseline
+yet is exactly the kind of number this doc's own reporting discipline warns not to
+present as final — the honest status is "encouraging, incomplete." Update this table
+(don't just append) once `experiment.summarize_results` and `experiment.
+summarize_baseline` both report 30/30.
