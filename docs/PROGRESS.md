@@ -493,3 +493,14 @@ RecallGuard's new project to that same account and skipped the card fight entire
 doesn't help. No plan changes: RecallGuard still gets its own separate GCP project (per
 `docs/GCP_SETUP.md`, unchanged), and still needs the same SadaPay support ticket
 resolved before Cloud Run/Firestore/Pub/Sub can go live for either project's benefit.
+
+## 2026-08-23 — GCP support's final answer: no manual verification offered
+
+Second-round reply from the escalated ticket: the internal team's recommendation is
+just "try a different payment method" — no offer of manual ID/statement-based
+verification, despite that being explicitly requested in the follow-up. Confirms what
+the earlier research already suggested: this isn't fixable through support, it needs an
+actual different card. Two days and two round-trips spent on this path; decided not to
+keep waiting on a third reply — pivoting to solving it directly (find any working card,
+or have someone else's Google account back the billing while the user keeps full
+technical/IAM control) rather than re-opening the ticket again.

@@ -286,15 +286,16 @@ Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
       on **Cloud Run**, not Vercel — keeps one platform, one story for the "visible Google
       Cloud deployment" judging criterion, and avoids a second integration surface under
       a 9-day clock. Full reasoning in `docs/PLAN.md`.
-- [ ] **🔴 GCP billing verification blocked (in progress, 2026-08-22).** Free-trial
-      billing setup fails with `OR_BACR2_31` — both a SadaPay virtual and physical
-      Mastercard declined with the identical error. Root cause: fintech/prepaid card
-      BINs (SadaPay, NayaPay) are broadly blocked by Google's cloud-billing fraud checks,
-      independent of which specific card. A Google Cloud Support ticket has been filed
-      asking for manual identity verification instead of card verification; first reply
-      was a generic canned response, a follow-up was sent pushing back on it (see
-      `docs/PROGRESS.md` for the full exchange). **This blocks Cloud Run / Firestore /
-      Pub/Sub specifically — it does not block Gemini API work (see below).**
+- [ ] **🔴 GCP billing verification blocked — support closed, needs a real card now
+      (updated 2026-08-23).** Free-trial billing setup fails with `OR_BACR2_31` — both a
+      SadaPay virtual and physical Mastercard declined identically. Root cause:
+      fintech/prepaid card BINs are broadly blocked by Google's cloud-billing fraud
+      checks. Google Cloud Support's final answer (after escalation): no manual
+      verification offered, just "try a different payment method." **Not fixable through
+      support — needs an actual working card, or another Google account willing to back
+      the billing (owner adds this user as IAM Owner/Editor, so technical control stays
+      unaffected).** This blocks Cloud Run / Firestore / Pub/Sub specifically — does not
+      block Gemini API work (see below).
 - [x] **GCP deployment prep done ahead of billing clearing (2026-08-23).** A parallel
       Claude session (the desktop/laptop app, working on the same project) produced
       `docs/GCP_SETUP.md` (a two-part runbook — do-now vs. do-once-billing-clears),
