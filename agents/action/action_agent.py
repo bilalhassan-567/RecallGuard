@@ -135,17 +135,35 @@ def run_action_agent(match: dict, recall: dict, business: dict, match_id: str | 
             "here deliberately, not just by caller discipline."
         )
 
-    checklist = generate_pull_checklist(match, recall)
-    drafts = generate_notification_drafts(match, recall, business)
-    compliance_record = generate_compliance_record(match, recall, business, checklist)
-
     if match_id is None:
         match_id = f"{recall.get('sourceRecordId', 'unknown')}_{business.get('id', 'unknown')}"
     safe_id = _safe_filename(match_id)
+    business_id = business.get("id", "unknown")
+
+    # Per-step state so a failure resumes from where it broke, not from scratch — see
+    # docs/PLAN.md's failure-modes table: "match found, PDF generation fails -> workflow
+    # resumes from the failed step." If PDF export throws (a real, plausible failure —
+    # disk full, a bad character reaching the renderer despite the escaping) a retry
+    # skips regenerating the checklist/drafts/record and just retries the PDF.
+    progress = storage.get(f"businesses/{business_id}/action_progress", safe_id)
+    if progress and progress.get("step") == "artifacts_ready":
+        checklist = progress["checklist"]
+        drafts = progress["drafts"]
+        compliance_record = progress["complianceRecord"]
+    else:
+        checklist = generate_pull_checklist(match, recall)
+        drafts = generate_notification_drafts(match, recall, business)
+        compliance_record = generate_compliance_record(match, recall, business, checklist)
+        storage.save(
+            f"businesses/{business_id}/action_progress",
+            safe_id,
+            {"step": "artifacts_ready", "checklist": checklist, "drafts": drafts, "complianceRecord": compliance_record},
+        )
+
     pdf_path = pdf_export.write_compliance_pdf(compliance_record, ARTIFACTS_DIR / f"{safe_id}.pdf")
 
-    business_id = business.get("id", "unknown")
     storage.save(f"businesses/{business_id}/compliance_log", safe_id, compliance_record)
+    storage.save(f"businesses/{business_id}/action_progress", safe_id, {"step": "complete"})
 
     return {
         "checklist": checklist,

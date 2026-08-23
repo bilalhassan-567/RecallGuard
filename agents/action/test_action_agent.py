@@ -7,6 +7,7 @@ import shutil
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import action_agent
@@ -111,6 +112,40 @@ class TestRunActionAgentEndToEnd(unittest.TestCase):
         self.assertTrue(Path(result["compliancePdfPath"]).exists())
         self.assertEqual(result["complianceRecord"]["status"], "draft_ready_for_human_review")
         self.assertIn("checklist_generated", result["complianceRecord"]["actionsTaken"])
+
+
+class TestResumeAfterPdfFailure(unittest.TestCase):
+    """Simulates docs/PLAN.md's failure mode: 'match found, PDF generation fails ->
+    workflow resumes from the failed step, not from scratch.'"""
+
+    @classmethod
+    def setUpClass(cls):
+        action_agent.ARTIFACTS_DIR = TEST_ARTIFACTS_DIR
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(TEST_ARTIFACTS_DIR, ignore_errors=True)
+        shutil.rmtree(Path(__file__).resolve().parent.parent / "local_data" / "businesses", ignore_errors=True)
+
+    def test_retry_skips_regenerating_artifacts_and_succeeds(self):
+        match_id = "resume-test-match"
+
+        with patch.object(action_agent, "generate_pull_checklist", wraps=action_agent.generate_pull_checklist) as spy_checklist:
+            with patch.object(action_agent.pdf_export, "write_compliance_pdf", side_effect=RuntimeError("disk full")):
+                with self.assertRaises(RuntimeError):
+                    action_agent.run_action_agent(AUTO_MATCH, RECALL, BUSINESS, match_id=match_id)
+            self.assertEqual(spy_checklist.call_count, 1)  # ran once, before the simulated failure
+
+            progress = action_agent.storage.get(f"businesses/{BUSINESS['id']}/action_progress", match_id)
+            self.assertEqual(progress["step"], "artifacts_ready")
+
+            # Retry — PDF export works this time. The checklist must NOT be regenerated.
+            result = action_agent.run_action_agent(AUTO_MATCH, RECALL, BUSINESS, match_id=match_id)
+            self.assertEqual(spy_checklist.call_count, 1, "checklist was regenerated on retry instead of reusing saved progress")
+
+        self.assertTrue(Path(result["compliancePdfPath"]).exists())
+        final_progress = action_agent.storage.get(f"businesses/{BUSINESS['id']}/action_progress", match_id)
+        self.assertEqual(final_progress["step"], "complete")
 
     def test_two_matches_same_recall_dont_collide_when_match_id_given(self):
         """Regression test: found on a real run where the same recall matched two

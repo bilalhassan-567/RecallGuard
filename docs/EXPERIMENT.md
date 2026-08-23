@@ -78,3 +78,25 @@ yet is exactly the kind of number this doc's own reporting discipline warns not 
 present as final — the honest status is "encouraging, incomplete." Update this table
 (don't just append) once `experiment.summarize_results` and `experiment.
 summarize_baseline` both report 30/30.
+
+### A second, automated comparison point (not the human baseline)
+
+`experiment/naive_baseline.py` — a non-LLM fuzzy-string matcher (stdlib `difflib`, no
+API calls, no human). Not a substitute for the human baseline above; a different,
+complementary question: does the Matching Agent's reasoning add value over simple
+string similarity, or would naive fuzzy matching get the same result for free?
+
+| Metric (naive baseline, full n=30) | Value |
+|---|---|
+| Detected | 10/30 (33%) |
+| False positives | 0 |
+| Precision | 100% |
+| Recall | 33.3% |
+| Mean time per recall | ~5ms (no API call) |
+
+**Answer: no, it wouldn't.** The naive matcher misses two-thirds of the true positives —
+it can't bridge real invoice abbreviation styles (e.g. "Lowes Foods sour cream and onion
+flavored potato chips, 8oz. bag" vs. the invoice's "LOWES FD S/C ONION CHIPS 8Z" scores
+below the match threshold on raw text similarity alone). This is honest, useful evidence
+for why the project reaches for an LLM here instead of simpler string matching — the
+gap naive matching leaves is exactly the gap Gemini's reasoning closes.
