@@ -14,6 +14,7 @@ specific short session (e.g. "10 cases, ~5-10 min, then I'll stop").
 """
 import argparse
 import json
+import random
 import sys
 import time
 from pathlib import Path
@@ -31,10 +32,25 @@ INVOICE_DIR = EXPERIMENT_DIR / "invoices"
 RESULTS_PATH = EXPERIMENT_DIR / "baseline_results.jsonl"
 
 
+SHUFFLE_SEED = 42  # fixed, not random-per-run — see the note below on why
+
+
 def load_line_items() -> list[dict]:
+    """Concatenating the CSVs in file order (as this originally did) produces a list
+    whose position order tracks the order the ground-truth true-positive lines were
+    authored in — which is also the recall processing order. A person doing case 1,
+    2, 3... in order would see the matching line creep from position ~0 to ~1 to ~2 and
+    so on, a real, noticeable, exploitable pattern that has nothing to do with actually
+    reading and matching invoice text (caught 2026-08-27 — see docs/PROGRESS.md).
+    Shuffled once with a fixed seed so the displayed order has no relationship to
+    recall order, but stays IDENTICAL across every run/session (unlike a fresh random
+    shuffle each time, which would make a resumed session show a different order than
+    the same person saw for earlier cases — this way it's decorrelated but still
+    consistent)."""
     lines = []
     for csv_path in sorted(INVOICE_DIR.glob("*.csv")):
         lines.extend(csv_parser.parse_csv(csv_path, supplier=csv_path.stem))
+    random.Random(SHUFFLE_SEED).shuffle(lines)
     return lines
 
 

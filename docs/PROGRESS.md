@@ -1091,3 +1091,47 @@ explicitly in `docs/PLAN.md`; and the hosting requirement is more lenient than
 previously captured (a project doesn't need to be live at the exact moment of judging,
 just provide clear proof it was built and deployed on Google Cloud) — doesn't change
 anything since RecallGuard is live anyway, but lowers the stakes of a late outage.
+
+## 2026-08-27 — Real bug in the human baseline tool: guessable line ordering, caught by the user
+
+User started the human baseline for real and noticed something off after a few cases:
+the matching line's position in the shown 37-line list seemed to creep upward by about
+one each time, case after case — not random. Took this seriously and checked rather
+than dismissing it.
+
+**Confirmed real, not a false alarm.** `load_line_items()` built the shown list by
+concatenating the invoice CSVs in file order — and the true-positive line for each
+recall had been authored into those CSVs in the same order the recalls themselves were
+selected in, so the two orders tracked each other almost exactly. Measured it directly:
+Pearson correlation between recall processing order and the true-positive line's shown
+position was **0.998** — for all practical purposes a straight line, not noise. A
+person working through cases in order could learn "the answer is near position N" and
+answer fast/correctly without reading a single invoice line, which would have silently
+inflated the human baseline's apparent speed and accuracy and invalidated the exact
+comparison this experiment exists to make.
+
+**20 cases had already been recorded under the flawed ordering** before this was
+caught — moved to `agents/experiment/baseline_results_TAINTED_ordering_bug_2026-08-27.jsonl.bak`
+(kept locally as a record, not deleted, not committed) rather than silently discarded.
+That data is not usable — noticing a pattern (even without consciously exploiting it)
+plausibly changes scanning behavior enough to compromise the "unaided" premise, so
+there was no clean way to salvage a partial subset of it.
+
+**Fixed**: `load_line_items()` now shuffles the line list once with a fixed seed
+(`random.Random(42).shuffle(...)`) — decorrelates the shown order from recall
+processing order while staying identical across every run/session, so a resumed
+session still shows the same order a person saw earlier. Re-measured after the fix:
+correlation dropped to **-0.233**, indistinguishable from noise. Confirmed the scoring
+code (`summarize_baseline.py`) matches purely on line *text*, never position, so the
+fix has zero effect on how results get scored — only on what's displayed.
+
+Added `agents/experiment/test_run_human_baseline.py`, a real regression test against
+the actual ground-truth data (not a synthetic fixture) asserting this correlation stays
+under 0.5. Verified the test is not a tautology by running it against the reverted
+(pre-fix) ordering logic first and confirming it actually fails there (0.998), then
+confirming it passes against the fix (-0.233) — proof the test would have caught this
+the first time, not just after the fact.
+
+**Human baseline is back to 0/30**, now on a tool that's actually fair. This is exactly
+the kind of catch that justifies why this project treats the human baseline as
+something that has to be a real person's real attempt, not a formality.

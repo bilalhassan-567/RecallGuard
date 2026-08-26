@@ -20,7 +20,9 @@
   escalated to review, not acted on), mean time-to-detection.
 - **`run_human_baseline.py`** — the human half. A real timed CLI (not "go do this with a
   stopwatch") — shows the same recall + same invoice list the agent sees, records which
-  line(s) you pick and how long it took. Also resumable (Ctrl-C saves progress).
+  line(s) you pick and how long it took. Also resumable (Ctrl-C saves progress). The
+  shown line order is shuffled once with a fixed seed (2026-08-27 fix) so it doesn't
+  correlate with recall order — see `docs/PROGRESS.md` for the real bug this fixed.
 - **`summarize_baseline.py`** — scores the human run with the same definitions, so the
   two sides are directly comparable.
 
