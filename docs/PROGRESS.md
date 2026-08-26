@@ -651,3 +651,182 @@ good." Did the polish work before anything went public:
   `docs/submission/` too, but only as plain-text narrative, not actual markdown
   hyperlinks — confirmed via grep, left those alone since they're accurate history, not
   broken links).
+
+## 2026-08-24 — GCP billing: second fintech card also blocked (NayaPay virtual Visa)
+
+User tried a NayaPay virtual Visa card (different fintech from the earlier SadaPay
+attempt) for the GCP billing account. Google issued a real `TEMPORARY HOLD` on it —
+confirmed by NayaPay's own authorization email — meaning the card authorized fine at
+the network level. Billing setup still failed immediately after with the same
+`OR_BACR2_31` error as SadaPay. Two different Pakistani fintech/neobank cards, both
+authorizing successfully, both rejected by the same check — this is now good evidence
+the block is keyed on issuer/BIN category (fintech-issued card), not on funds or
+authorization success, consistent with Google Support's earlier "try a different
+payment method" answer. Next attempt should be a **physical credit card from a
+traditional bank** (not another neobank/virtual-card product), since those carry BIN
+ranges outside whatever list Google is filtering on. GCP/Cloud deploy remains blocked
+until then.
+
+## 2026-08-25 — Hackathon $150 GCP credit approved — does not unblock billing
+
+Received the hackathon's official approval email: promo code (redeemable at
+`console.cloud.google.com/billing/redeem`, code expires 2026-09-03, credits usable for
+3 months after redemption). Read carefully: **this does not solve the billing account
+problem.** Redeeming a coupon requires an existing billing account, or creating a new
+one — and creating one still requires passing the same payment-method verification
+that's been failing with `OR_BACR2_31` on three cards now (SadaPay virtual, SadaPay
+physical, NayaPay virtual). The credit is real and appreciated but sits inert until a
+working card clears billing setup. Hackathon organizers explicitly said they can't
+help with billing/redemption issues and to go to Google Cloud Billing Support directly
+— consistent with the support thread already in progress. Drafted an updated message
+to Billing Support including the NayaPay authorization evidence (temp hold succeeded,
+setup still failed) to make the "this isn't a funds issue" case more concrete.
+Updated `docs/PHASES.md` to reflect both facts together so the status board doesn't
+read as resolved when it isn't.
+
+## 2026-08-26 — GCP billing finally unblocked (borrowed card, real bank issuer)
+
+A card from a traditional bank (not a fintech/neobank — someone else's, used with
+explicit care that it never gets charged) passed billing account verification for the
+first time after three fintech-card failures (SadaPay ×2, NayaPay). Confirms the
+fintech-BIN-block theory from 2026-08-24/25 was correct. Sequence: billing account
+created (status Active, still Free Trial) → hit the $150 hackathon coupon's "must
+upgrade to redeem" requirement → set a low-threshold budget alert first as a safety
+net → upgraded to a standard Pay-As-You-Go account → redeemed promo code `4B0U`
+successfully. Reported result: $300 original free-trial credit intact + $150 hackathon
+credit landed (expires ~2026-09-24/25, **~29 days from today — build this into
+whatever cloud work still needs doing**) + one older, already-expired, unrelated $300
+credit ignored. $450 usable credit, $0 spent. **Independently confirmed via the user's
+own screenshot of the Credits page** (not just the other session's relayed report) —
+exact match: Free Trial $300 Available, "Marketing - All things Agentics Participants"
+$150 Expiring in 29 days, old Free Trial $300 Expired. Billing is genuinely resolved.
+
+Confirmed separately (own research, not the other session's claim): the hackathon's
+mandatory-tech rule is "Gemini API **or** Vertex AI," not Vertex-only
+(`docs/PLAN.md` line 36) — so the deploy plan is to keep calling Gemini through the
+free AI Studio API key even from Cloud Run, not switch to Vertex AI (which has no free
+tier and bills from the first token). Combined with Cloud Run/Firestore/Pub/Sub/
+Scheduler's permanent Always-Free tiers, expected real hackathon-scale GCP spend is
+$0 — the $450 credit is margin, not something usage is expected to actually consume.
+Next: pick one of the ~10 orphaned "My First Project" entries (confirmed not the
+Chhaon project) to attach this billing account to, or create one fresh now that the
+project-creation quota issue should no longer block a single new one, and resume
+Phase 1 cloud work (APIs enabled, Cloud Run deploy, real Firestore).
+
+## 2026-08-26 — Hard spending cap built, deployed, and live-tested (not just alerted)
+
+Given the billing account is backed by someone else's card, a Budget Alert alone
+wasn't good enough — it only emails, it can't stop a charge. Built
+`infra/billing_guard/` (Cloud Function, gen2, Pub/Sub-triggered): the moment a budget
+notification reports actual cost at or above the budget amount, it calls the Cloud
+Billing API to detach the billing account from the project, which kills further
+billable usage outright. 5 offline unit tests (`test_main.py`, fakes for
+`functions_framework`/`google-cloud-billing` injected via `sys.modules` since neither
+is installed locally) cover under-budget/at-budget/over-budget/already-disabled/
+missing-budget-amount before anything touched the real account.
+
+Picked a project to attach this to: verified via `gcloud projects list` that
+`chhaon-hackathon` is the real Chhaon project (confirmed by name — never touching it)
+and there's also `gen-lang-client-0669638142` ("Default Gemini Project," likely
+auto-created behind the AI Studio key). Rather than reuse either, checked
+`project-04109a57-e726-450d-8b1` ("My First Project") for any existing use first —
+enabled APIs list showed only default boilerplate, IAM showed only the account owner,
+no Firestore/Cloud Run/App Engine/storage — genuinely empty, confirmed before touching
+it. Relabeled it "RecallGuard" and linked the now-active billing account to it.
+
+Deploying it surfaced three real bugs, all now documented in
+`infra/BILLING_GUARD_SETUP.md` so they're not rediscovered next time:
+1. Gen2 function build failed with a missing Cloud Build permission — new projects
+   don't get this granted automatically anymore; fixed with an explicit
+   `roles/cloudbuild.builds.builder` grant.
+2. Even after deploying successfully, the Eventarc trigger couldn't invoke its own
+   underlying Cloud Run service ("not authenticated") — needed an explicit
+   `roles/run.invoker` grant for the trigger's service account on that service.
+3. **Manual live-test payloads were double-base64-encoded** — pre-encoding the test
+   message before handing it to `gcloud pubsub topics publish` was wrong, since Pub/Sub
+   encodes the body itself; the function's single decode (which correctly matches what
+   Eventarc actually delivers) was unwrapping to the raw base64 string instead of JSON.
+   Traced with temporary debug logging, fixed the test harness, not the function — the
+   function's logic was correct the whole time. Separately hit Windows-specific
+   `gcloud.cmd`/`cmd.exe` argument-quoting corruption of embedded JSON quotes; worked
+   around by POSTing directly to the Pub/Sub REST API via `Invoke-RestMethod` instead of
+   fighting CLI quoting.
+
+**Live-tested for real, not just deployed**: published a genuine over-budget message
+via the Pub/Sub REST API, confirmed in Cloud Logging that the function logged
+`BILLING DISABLED`, and confirmed via `gcloud billing projects describe` that
+`billingEnabled` actually flipped to `false` on the real project. Re-linked billing
+afterward to resume work, and connected the real "$1 Monthly Budget Alert" (that was
+already created) to the function's Pub/Sub topic, so this is now genuinely live
+protection, not just proven-in-isolation code. Full deployed-state reference (project
+ID, service account, budget ID) in `infra/BILLING_GUARD_SETUP.md`.
+
+## 2026-08-26 — First real Cloud Run + Firestore deployment, live-verified
+
+With billing unblocked and the hard spending cap proven, moved on to actual Phase 1/3
+cloud work on the same `project-04109a57-e726-450d-8b1` ("RecallGuard") project.
+
+- **Secret Manager**, not a plain env var, for the Gemini API key: read the key out of
+  the local `agents/.env` and piped it directly into `gcloud secrets create` via
+  PowerShell (`Get-Content | Where-Object | ForEach-Object | & gcloud ...`) so the raw
+  key value never appeared in any command output or got logged anywhere — only its
+  length was printed as a sanity check. Granted the Cloud Run service account
+  `roles/secretmanager.secretAccessor` on just that secret.
+- **Firestore database created** (Native mode, `us-central1`, confirmed `freeTier:
+  true` in the creation response).
+- **Cloud Run deploy**: `gcloud run deploy recallguard-dashboard --source .` (builds
+  remotely via Cloud Build — no local Docker needed, matching the Dockerfile's own
+  comment). `--min-instances` left at 0 (scale-to-zero, matching the free-tier plan).
+  Live at `https://recallguard-dashboard-306204883908.us-central1.run.app` — verified
+  with a real `curl`, not just a clean deploy exit code: HTTP 200, real JSON from the
+  actual dashboard API logic (empty state, correctly, since nothing was seeded yet).
+- **Found a real gap before it mattered**: the first deploy was serving correctly, but
+  still using the local JSON-file storage stand-in internally — meaning it wouldn't
+  actually persist across Cloud Run restarts/scale events, defeating the point of
+  standing Firestore up at all. Fixed properly: added a `USE_FIRESTORE` env-var switch
+  to `agents/storage.py`'s three functions (`save`/`get`/`list_collection`), each now
+  branching to a real `google.cloud.firestore.Client()` call when set, otherwise
+  unchanged local JSON behavior — same collection/doc-id call shape either way, so no
+  caller code changed. Default stays `FALSE`, so all 61 existing offline tests were
+  unaffected (reran the dashboard suite after the change: 12/12 still passing).
+  Redeployed with `USE_FIRESTORE=TRUE` plus a `roles/datastore.user` grant for the
+  Cloud Run service account (needed explicitly — this project doesn't get broad
+  default-SA grants automatically, same lesson as the billing-guard function).
+- **Proved it's actually hitting Firestore, not silently still falling back**: wrote a
+  document directly into Firestore via the REST API (`businesses/demo-biz-1`, name
+  "Live Firestore Verification Co"), then confirmed the exact same string came back
+  from the live `/api/state` endpoint. Deleted the test document afterward.
+
+**Still open**: Firestore security rules (`firestore.rules`, already drafted) aren't
+deployed yet — needs the Firebase CLI, not plain `gcloud`. Pub/Sub + Cloud Scheduler
+event backbone (Phase 3) not wired yet.
+
+## 2026-08-26 — Live Firestore seeded, full pipeline proven end-to-end on Cloud Run
+
+Set up Application Default Credentials (`gcloud auth application-default login` —
+needed two retries: the first browser attempt didn't consent the `cloud-platform`
+scope, and `--no-browser` needs a second machine so wasn't practical here; the plain
+browser flow worked once completed properly) so local Python could talk to the real
+Firestore project directly, separately from the `gcloud` CLI's own login.
+
+Ran `agents/seed_dashboard_data.py` with `USE_FIRESTORE=TRUE` against the live
+project — this is the existing real-data seed script (verbatim Gemini outputs captured
+earlier this session, not fabricated for this), so **zero new Gemini calls**, and only
+openFDA reads (no quota) plus a few dozen Firestore writes (nowhere near the 20K/day
+free quota). Had to `pip install google-cloud-firestore` locally first (it was only in
+the Docker image's requirements, not the dev venv). Verified the live dashboard
+reflects it: `/api/state` now shows 5 real cases, 1 pending review item, radar pings
+across MD/VA/NC, and real aggregate metrics — matches the local seeded data exactly.
+
+**Also exercised the write path live, not just reads**: POSTed to
+`/api/review/{id}/confirm` on the deployed service for the one pending-review case
+(hit a `411 Length Required` from Google's front end first — a POST with no body
+doesn't send `Content-Length`; fixed by sending an explicit empty body). Confirmed via
+three independent checks that the real Action Agent actually ran server-side on Cloud
+Run, not just a status flip: the review queue emptied (5→0... 1→0), the match's status
+flipped from `pending_review` to `auto_actioned`, and a real `compliance_log` document
+(checklist, actionsTaken, matchReasoning, etc.) now exists in Firestore, read back
+directly via the REST API. This confirms the full sense→decide→act pipeline runs
+correctly against real Cloud Run + real Firestore, still at $0 real cost (the Action
+Agent makes no LLM calls by design, so this cost nothing against the Gemini quota
+either).

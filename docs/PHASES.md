@@ -4,7 +4,8 @@ The one file to check for "where are we." Flip statuses here as work lands — d
 drift from `docs/PROGRESS.md` (the detailed log) or from reality. Status values: **Not
 started** · **In progress** · **Blocked** · **Done**.
 
-**Last updated:** 2026-08-22 — project scaffolding + documentation phase.
+**Last updated:** 2026-08-26 — full local pipeline built and tested; GCP billing is the
+one open blocker for anything cloud-side.
 
 ---
 
@@ -52,8 +53,8 @@ work wraps)?
 
 | Phase | Status |
 |---|---|
-| 0 — Documentation & repo scaffolding | In progress |
-| 1 — Foundations (GCP, ADK hello-world, Firestore schema) | Not started |
+| 0 — Documentation & repo scaffolding | Done |
+| 1 — Foundations (Gemini/ADK local, GCP project/billing, Cloud Run + Firestore live) | Done |
 | 2 — Recall ingestion (FSIS + openFDA) | Done (openFDA-only; FSIS deferred, see notes) |
 | 3 — Event backbone (Pub/Sub + Scheduler) | Not started |
 | 4 — Invoice ingestion (CSV + multimodal image) | Done (local) |
@@ -74,17 +75,46 @@ work wraps)?
 - [x] `CLAUDE.md` — internal rules file (gitignored): no-AI-co-author rule, docs split rule, working rhythm
 - [x] `docs/` public structure created (this board, plan, architecture, data model, agent
       logic, experiment design, risk register, submission drafts)
-- [ ] Root `README.md` — problem statement + status (spin-up steps land once there's something to spin up)
-- [ ] First commit
+- [x] Root `README.md` — rewritten 2026-08-24 with real status, spin-up commands (all
+      verified working), and docs index
+- [x] First commit — and pushed live: https://github.com/bilalhassan-567/RecallGuard
+      (public, MIT licensed, 12 topics, badges)
 
 ## Phase 1 — Foundations
 
-- [ ] GCP project created, billing linked
-- [ ] APIs enabled: Vertex AI, Firestore, Pub/Sub, Cloud Run, Cloud Scheduler
-- [ ] ADK scaffolding + hello-world agent deployed to Cloud Run
-- [ ] Firestore schema created (see `docs/DATA_MODEL.md`)
-- [ ] Firestore security rules drafted (scoped per `businessId`)
-- [ ] Secrets handled via Secret Manager / env injection (no hardcoded credentials — verify this on camera later, section 5c)
+- [x] ADK + `google-genai` scaffolding, hello-world agent, working locally against a free
+      Gemini API key (no billing needed) — see the Blockers entry below for the full detail.
+- [x] Firestore schema designed (`docs/DATA_MODEL.md`) and implemented against the local
+      JSON-file stand-in (`agents/storage.py`) with the same collection/doc-id addressing,
+      so swapping in real Firestore is a backend change, not a rewrite.
+- [x] Firestore security rules drafted (`firestore.rules`, businessId-scoped, matches
+      `docs/DATA_MODEL.md`) — written, not yet deployed (needs a real Firestore instance).
+- [x] Secrets handled via `.env` + `.gitignore` locally (no hardcoded credentials —
+      verified via `git status`/diff before every commit); Secret Manager itself is a
+      cloud-deploy step, blocked with the rest of Cloud Run below.
+- [x] **GCP project created, billing linked (2026-08-26)** — reused an empty orphaned
+      project (`project-04109a57-e726-450d-8b1`, relabeled "RecallGuard"), billing
+      account linked, hard spending cap deployed and live-verified first (see Blockers
+      below).
+- [x] **APIs enabled**: Cloud Run, Firestore, Pub/Sub, Cloud Functions, Cloud
+      Scheduler, Secret Manager, Cloud Build, Eventarc, Artifact Registry. Vertex AI
+      deliberately NOT enabled — staying on the free AI Studio Gemini key per the
+      hackathon's "Gemini API or Vertex AI" rule (`docs/PLAN.md` line 36).
+- [x] **Dashboard deployed to Cloud Run and live** — `gcloud run deploy --source .`,
+      scale-to-zero (`min-instances=0`). Live at
+      `https://recallguard-dashboard-306204883908.us-central1.run.app`, verified with a
+      real `curl` (HTTP 200, real API JSON). Gemini API key delivered via Secret
+      Manager, not a plain env var.
+- [x] **Real Firestore standing in for the local JSON stand-in** — database created
+      (Native mode, `us-central1`, free tier). `agents/storage.py` now branches on
+      `USE_FIRESTORE` to call real Firestore instead of local JSON files, same
+      collection/doc-id call shape either way; verified live by writing a document
+      directly via the Firestore REST API and confirming it round-tripped through the
+      deployed app's `/api/state` endpoint. All 61 offline tests still pass (env var
+      defaults off, so local dev/test behavior is unchanged).
+- [ ] Firestore security rules (`firestore.rules`, already drafted) not yet deployed —
+      needs the Firebase CLI, not plain `gcloud`.
+- [ ] No real demo data seeded into the live Firestore yet.
 
 ## Phase 2 — Recall ingestion
 
@@ -341,16 +371,27 @@ Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
       on **Cloud Run**, not Vercel — keeps one platform, one story for the "visible Google
       Cloud deployment" judging criterion, and avoids a second integration surface under
       a 9-day clock. Full reasoning in `docs/PLAN.md`.
-- [ ] **🔴 GCP billing verification blocked — support closed, needs a real card now
-      (updated 2026-08-23).** Free-trial billing setup fails with `OR_BACR2_31` — both a
-      SadaPay virtual and physical Mastercard declined identically. Root cause:
-      fintech/prepaid card BINs are broadly blocked by Google's cloud-billing fraud
-      checks. Google Cloud Support's final answer (after escalation): no manual
-      verification offered, just "try a different payment method." **Not fixable through
-      support — needs an actual working card, or another Google account willing to back
-      the billing (owner adds this user as IAM Owner/Editor, so technical control stays
-      unaffected).** This blocks Cloud Run / Firestore / Pub/Sub specifically — does not
-      block Gemini API work (see below).
+- [x] **🟢 GCP billing unblocked (resolved 2026-08-26).** Root cause confirmed: fintech/
+      neobank card BINs (SadaPay virtual, SadaPay physical, NayaPay virtual — all 3
+      failed identically with `OR_BACR2_31`, one after a successfully-authorized
+      temporary hold, ruling out a funds/auth issue) are broadly blocked by Google's
+      cloud-billing fraud checks; Google Support offered no manual override. Fixed by a
+      physical card from a traditional bank (not a fintech product) — passed
+      verification on the first try. Billing account created (Active) → hit "must
+      upgrade to redeem" on the $150 hackathon coupon → set a low-threshold budget alert
+      as a safety net first → upgraded to standard Pay-As-You-Go → redeemed promo code
+      `4B0U` successfully. **Verified via the user's own Credits page screenshot:** $300
+      Free Trial (Available) + $150 hackathon credit (Available, expiring ~2026-09-24 —
+      **29-day clock, pace remaining cloud work around it**) + one unrelated already-
+      expired $300 credit. $450 usable, $0 spent. Confirmed separately that the
+      hackathon's mandatory-tech rule is "Gemini API **or** Vertex AI" (`docs/PLAN.md`
+      line 36) — plan is to keep the free AI Studio key even on Cloud Run rather than
+      switch to Vertex (no free tier, bills from token one). Combined with Cloud Run/
+      Firestore/Pub/Sub/Scheduler's permanent Always-Free tiers, expected real spend at
+      hackathon scale is $0 — the credit is margin. **Next:** attach this billing
+      account to one of the ~10 orphaned "My First Project" entries (confirmed not the
+      Chhaon project) or a fresh project, then resume Phase 1 cloud work (APIs enabled,
+      Cloud Run deploy, real Firestore, Pub/Sub, Scheduler).
 - [x] **GCP deployment prep done ahead of billing clearing (2026-08-23).** A parallel
       Claude session (the desktop/laptop app, working on the same project) produced
       `docs/GCP_SETUP.md` (a two-part runbook — do-now vs. do-once-billing-clears),
