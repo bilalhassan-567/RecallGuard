@@ -922,3 +922,98 @@ directly via the REST API. This confirms the full sense→decide→act pipeline 
 correctly against real Cloud Run + real Firestore, still at $0 real cost (the Action
 Agent makes no LLM calls by design, so this cost nothing against the Gemini quota
 either).
+
+## 2026-08-26 — Real Invoices management module: upload, list, reconciliation, delete, export
+
+User asked "where is this happening in our system, I can't see anything" after the
+layman walkthrough described a restaurant photographing/uploading an invoice — a fair
+catch. `csv_parser.py`/`image_parser.py` were real and tested, but every time either
+had ever run, it was a developer running a script directly, never a feature a person
+could click. Separately, invoice lines had never had a parent "invoice" entity — flat,
+ungrouped documents with no upload timestamp and no way to trace a match back to its
+source invoice. Scoped with the user as "solid core + extras": upload (CSV + photo),
+list view with reconciliation status, per-line match history, search/filter, delete,
+CSV export.
+
+Explored the codebase with three parallel Explore agents (dashboard code/styling,
+invoice-parsing backend/data model, brand style guide) before designing anything —
+surfaced that `docs/DATA_MODEL.md` documented a parent-invoice shape that no code
+actually implemented, and that `matches.invoiceLineRef` is a value-copy of a line dict,
+not a foreign key. That second fact turned out to be the key to a cheap fix: since
+`matching_agent.match_recall_against_lines` copies whatever line dict it's handed
+straight into the match record, embedding `invoiceId`/`lineId` into each line *before*
+matching makes every future match traceable back to its invoice automatically —
+**`matching_agent.py` and `orchestrator.py` needed zero changes.**
+
+Built (plan reviewed and approved before coding, per the user's request to use plan
+mode for this one):
+- `agents/invoices/invoice_store.py` — `create_invoice`, `flatten_invoice_lines` (the
+  entire reconciliation mechanism), `list_invoices` (reconciliation counts computed
+  fresh from real match records each time, never cached), `get_invoice_detail`,
+  `delete_invoice`. 10 offline tests.
+- `agents/storage.py` — added the one missing primitive, `delete()`. Closed a real
+  pre-existing gap: no test file had ever existed for `storage.py` itself; added
+  `agents/test_storage.py` (7 tests).
+- `agents/dashboard/server.py` — 4 new routes (`GET/POST/DELETE /api/invoices...`).
+  Upload dispatches on file extension server-side, never a client-sent flag. Exactly
+  one parser call per request — structurally impossible to double-call Gemini from
+  this endpoint. 8 new tests, including one that monkeypatches `image_parser.parse_image`
+  and asserts it's called exactly once — never hits real Gemini in the suite.
+- `agents/dashboard/static/index.html` — a new plain/undecorated Invoices panel
+  (brand guidance reserves the pin/stamp corkboard motif for the match visualization,
+  not lists/forms): dropzone upload with real drag-and-drop, a `.queue-item`-styled
+  row list with reconciliation pills, a detail modal with per-line match history,
+  search/filter, delete, client-side CSV export (no new backend endpoint needed — the
+  data's already in the fetched JSON). Two deliberate design guards: the search/filter
+  inputs live outside the 5s-poll-rebuilt container (so a poll tick never wipes
+  mid-keystroke input), and the upload submit button disables immediately on submit,
+  re-enabling in a `finally` (so a double-click can't double-charge a photo upload's
+  Gemini call).
+- `agents/main.py` (`on_recall_detected`, the live Cloud Function) — one line changed:
+  reads invoice lines via `invoice_store.flatten_invoice_lines` instead of the flat
+  collection directly. Nothing else in the pipeline changed.
+- `agents/migrate_legacy_invoices.py` — one-off, dry-run-by-default migration for the
+  27 legacy flat lines already live in production. Groups by supplier (exact match —
+  the old seed script used one literal string per source file), creates 5 real invoice
+  documents, best-effort backfills `invoiceId` onto existing matches by supplier+rawText,
+  deletes the old flat docs. **Idempotent by construction**: detects "already migrated"
+  by the presence of a `rawLineItems` key.
+- `docs/DATA_MODEL.md` corrected to match reality (added `sourceType`/`supplier`/`lineId`,
+  removed the fictional top-level `invoiceId` field on matches, documented
+  `invoiceLineRef` as a value-copy).
+
+**Verified before deploying, not just unit-tested**: ran a real Playwright browser
+against a local server — loaded the page, uploaded a real sample CSV through the actual
+file input, opened the detail modal, searched/filtered, all with zero console errors.
+Then, prompted by the user asking directly whether the view holds up with many invoices
+and whether it's responsive, actually tested both rather than asserting: seeded 60
+invoices, confirmed the real API responds in ~50ms (an initial 5.5s Playwright timing
+was a red herring from `networkidle` waiting on external font requests, not real
+slowness), and checked a 390px mobile viewport for horizontal overflow. Found a real
+bug — but traced it precisely to the **pre-existing** two-column Case Board grid
+(`grid-template-columns: 1fr 1.6fr` with no mobile breakpoint), not the new Invoices
+section, which rendered cleanly on mobile with no overflow at all. Fixed the pre-existing
+issue anyway (a `@media (max-width: 860px)` stack-to-one-column rule) since the user
+asked to complete everything, and re-verified the fix removed the overflow.
+
+**Migration run for real against production Firestore**: 27 legacy lines → 5 invoices,
+139 of 140 existing matches backfilled with `invoiceId`. The one match without a
+backfill is a known, correctly-unlinked artifact from the original `seed_dashboard_data.py`
+script (2026-08-24, before Invoices existed) — it embedded invoice-line-shaped data
+directly into a match record without ever creating a backing invoice document, so it
+genuinely has no source invoice to link to. Redeployed both live services
+(`recallMatcher` Cloud Function, `recallguard-dashboard` Cloud Run) after migrating —
+required ordering, since a legacy doc with no `rawLineItems` key contributes zero lines
+to matching until migrated. Verified live end-to-end on production: `/api/invoices`
+shows the 5 real migrated invoices with correct reconciliation counts, a real CSV
+upload/detail/delete round-trip worked, confirmed via a 404 after delete.
+
+**Cost, tracked as always**: the whole feature build, migration, and live verification
+cost **zero new GCP spend** (same two already-deployed services, no new infra) and a
+total of ~160 Firestore API calls for the one-time migration (trivially inside the free
+tier). On the Gemini side: building and testing this cost only 1 real call — running
+`python -m unittest discover` in `agents/invoices/` swept up `test_image_parser.py`'s
+existing live test, which wasn't the intent (should have run
+`test_invoice_store test_csv_parser` explicitly to stay fully offline) — a real,
+disclosed mistake, not hidden. Combined with the 5 calls from the event-backbone test
+earlier the same day, **6 of the 20 daily free Gemini calls used today, 14 remaining.**

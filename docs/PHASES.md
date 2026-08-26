@@ -199,6 +199,26 @@ work wraps)?
       recalled product line matched at 95% through the full pipeline (matching + action)
       exactly like the CSV cases. **3 tests passing.** Before the actual demo recording,
       swap the synthetic image for one genuine photographed invoice (see Blockers).
+- [x] **Real Invoices management module, live on Cloud Run (2026-08-26)** — closes a
+      real gap: `csv_parser.py`/`image_parser.py` had only ever been called from
+      developer scripts, never a feature a person could use. Added
+      `agents/invoices/invoice_store.py` (real invoice entity — `sourceFileName`,
+      `sourceType`, `supplier`, `uploadedAt`, `rawLineItems` with a `lineId` per line),
+      4 new dashboard routes (upload/list/detail/delete), and a dashboard UI section
+      (drag-and-drop upload, reconciliation-status list, per-line match history,
+      search/filter, delete, client-side CSV export). Reconciliation works because
+      `invoiceId`/`lineId` are embedded into each line before matching, and
+      `matching_agent.match_recall_against_lines` already copies whatever dict it's
+      given straight into the match record — zero changes needed to the matching or
+      orchestrator code. Migrated the 27 legacy flat lines already live in production
+      into 5 real invoices and backfilled `invoiceId` onto 139 of 140 existing matches
+      (the one exception predates any invoice-tracking at all — a known,
+      correctly-unlinked artifact). Found and fixed a real pre-existing mobile layout
+      bug (the Case Board's two-column grid had no mobile breakpoint) while verifying
+      the new section's own responsiveness. 25 new tests (`invoice_store`, `storage`,
+      dashboard upload/list/detail/delete — including one that monkeypatches
+      `image_parser.parse_image` to assert it's called exactly once, never hitting real
+      Gemini in the suite). Full detail in `docs/PROGRESS.md`.
 
 ## Phase 5 — Matching Agent
 
