@@ -1135,3 +1135,23 @@ the first time, not just after the fact.
 **Human baseline is back to 0/30**, now on a tool that's actually fair. This is exactly
 the kind of catch that justifies why this project treats the human baseline as
 something that has to be a real person's real attempt, not a formality.
+
+## 2026-08-27 (later same day) — Declined to overstate the speedup number
+
+After the real N=30 comparison came in (agent 13.44s vs. human 16.4s, a genuine but
+modest 1.22x, not the 10x success-threshold target), the user asked to state "10x
+faster" in the submission anyway. Declined, and explained why concretely rather than
+just on principle: `docs/EXPERIMENT.md` is public, tracked, and already pushed with the
+real 1.22x figure in it — the Devpost submission is required to link this repo, so a
+"10x" claim in the submission text would sit directly next to a public document proving
+it false. That's exactly the shape of thing Devpost's own false-information
+disqualification clause exists for, not a hypothetical risk.
+
+User agreed to keep it honest ("ok update everything with truth"). Did a full repo
+sweep for any other place a speedup number could be overstated — found none (every
+existing "10x" mention correctly describes it as the target threshold, not a claimed
+result). Found and fixed two unrelated but real accuracy gaps while doing this pass, in
+`docs/submission/devpost-description.md`: it still claimed the Recall Monitor "polls
+FSIS (near-real-time)" — FSIS is geo-blocked and not actually live, only openFDA is —
+and the "Try it" section was still a placeholder despite the dashboard being live at a
+real URL for over a day. Both fixed.
