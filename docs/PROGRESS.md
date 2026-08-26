@@ -1061,3 +1061,33 @@ Four remaining items tackled in one pass at the user's request:
 
 **Still open**: human baseline (needs the user), a genuine photographed invoice (needs
 the user), the actual video recording, and final Devpost submission text.
+
+## 2026-08-26 — Full re-verification against the live Devpost rules, 5 days out
+
+User asked to re-check everything against the real hackathon page directly (not
+memory) with the deadline 5 days away. Fetched the main page and the dedicated rules
+page live. Good news: deadline, judging weights (40/30/30), and the excluded-country
+list are all unchanged and match `docs/PLAN.md` exactly. Closed out a real open item
+this doc had flagged since 2026-08-22 ("self-verify this isn't a blocker") — the
+excluded list is Italy, Quebec, Crimea, Cuba, Iran, Syria, North Korea, Sudan, Belarus,
+Russia; Pakistan isn't on it.
+
+Found and fixed one real inaccuracy: `docs/PLAN.md` claimed "we use ADK" for the
+mandatory Agent Framework requirement. Grepped the actual deployed code —
+`matching_agent.py` and `image_parser.py` (the only two places that call Gemini)
+import `google.genai` directly, the **GenAI SDK**, not ADK's own classes. `google-adk`
+is real and installed, but only imported by `agents/hello_agent/`, a standalone Phase-1
+demo that isn't part of the deployed pipeline. Both are independently valid options on
+the official mandatory-tech list, so this was never an actual compliance gap — just an
+inaccurate claim about *which* one is doing the real work. Corrected `docs/PLAN.md`,
+`README.md`, and the "How we built it"/"Built with" sections of
+`docs/submission/devpost-description.md` (also fixed a stray "Vertex AI" mention there
+and the Pub/Sub topic name, which had drifted to the old planning-stage
+`recall.detected` instead of the real deployed `recall-detected`).
+
+Also newly confirmed: judging is a real three-stage process — Stage One is a pass/fail
+completeness gate before any scoring happens at all, not previously called out
+explicitly in `docs/PLAN.md`; and the hosting requirement is more lenient than
+previously captured (a project doesn't need to be live at the exact moment of judging,
+just provide clear proof it was built and deployed on Google Cloud) — doesn't change
+anything since RecallGuard is live anyway, but lowers the stakes of a late outage.
