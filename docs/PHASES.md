@@ -56,11 +56,11 @@ work wraps)?
 | 0 — Documentation & repo scaffolding | Done |
 | 1 — Foundations (Gemini/ADK local, GCP project/billing, Cloud Run + Firestore live) | Done |
 | 2 — Recall ingestion (FSIS + openFDA) | Done (openFDA-only; FSIS deferred, see notes) |
-| 3 — Event backbone (Pub/Sub + Scheduler) | Not started |
-| 4 — Invoice ingestion (CSV + multimodal image) | Done (local) |
-| 5 — Matching Agent (Gemini reasoning + confidence routing) | Core logic done, validated |
-| 6 — Action Agent + artifacts (checklist/notification/compliance PDF) | Done (local) |
-| 7 — Dashboard / UI (Scout corkboard) | Done (local) |
+| 3 — Event backbone (Pub/Sub + Scheduler) | Done — live on Cloud Scheduler/Pub/Sub/Cloud Functions |
+| 4 — Invoice ingestion (CSV + multimodal image) | Done (local; CSV path also live in Firestore) |
+| 5 — Matching Agent (Gemini reasoning + confidence routing) | Done — validated locally and live in the cloud pipeline |
+| 6 — Action Agent + artifacts (checklist/notification/compliance PDF) | Done (local + live) |
+| 7 — Dashboard / UI (Scout corkboard) | Done — live on Cloud Run, reading real Firestore |
 | 8 — Quantitative experiment (N=30 baseline vs agent) | In progress — harness done, 19/30 agent-side scored, naive baseline done, human baseline not started |
 | 9 — Failure-injection rehearsal + Architectural Design checklist | Mostly done — 4 of 5 code-level items real and tested; live demo rehearsal remains |
 | 10 — Demo video, docs polish, submission | Not started |
@@ -147,8 +147,33 @@ work wraps)?
 
 ## Phase 3 — Event backbone
 
-- [ ] Pub/Sub topic `recall.detected` + subscription wiring
-- [ ] Cloud Scheduler → Recall Monitor agent → publish, working end-to-end on seeded data
+- [x] **Pub/Sub topic `recall-detected` + subscription wiring (2026-08-26)** — real
+      topic, real Eventarc-managed push subscription, not simulated.
+- [x] **Cloud Scheduler → Recall Monitor → publish → Matching/Action, working live, not
+      just on seeded data.** `agents/main.py`: `poll_recalls` (HTTP, OIDC-authenticated,
+      triggered by the `recall-monitor-daily-poll` Scheduler job, once/day) fetches
+      openFDA, dedups against Firestore, publishes new recalls; `on_recall_detected`
+      (Pub/Sub-triggered) reuses `orchestrator.process_recall` unchanged. Live-tested by
+      running the actual Scheduler job: found 5 genuinely new real recalls (fetched live
+      from openFDA, not fixtures), checked all of them against 27 real seeded invoice
+      lines, wrote 135 real match records, correctly routed one new case to
+      `pending_review`. Cost 5 Gemini calls total (~15/20 daily quota left after), $0
+      GCP spend (Scheduler/Pub/Sub/Functions all inside Always-Free tier).
+- [x] **`agents/seed_invoices.py`** — real gap found and closed: invoice line items had
+      never been persisted to Firestore by anything before this (the local demo always
+      re-parsed CSVs fresh). CSV-only seed (27 lines), zero Gemini calls.
+- [x] **Firestore security rules deployed** (`firestore.rules`, via the Firebase Rules
+      REST API directly — avoided installing Node.js/npm just for this). Honest caveat:
+      protects nothing functionally yet, since the dashboard and Cloud Functions use a
+      service account, which bypasses rules by design (see the rules file's own header
+      comment) — matters the day a client reads Firestore directly from the browser.
+- **Two real bugs found only by live-testing, not just deploying** — full detail in
+  `docs/PROGRESS.md` (2026-08-26): (1) a genuine openFDA record missing `recall_number`
+  crashed the poller until fixed to skip-and-log instead of crash; (2) the Gemini API
+  key's Secret Manager value had a UTF-8 BOM silently embedded (from a PowerShell
+  pipe-encoding quirk when the secret was first created), causing
+  `UnicodeEncodeError` deep in the Gemini SDK's HTTP layer — fixed by recreating the
+  secret version from a file written with explicit no-BOM encoding.
 
 ## Phase 4 — Invoice ingestion
 
@@ -339,10 +364,13 @@ work wraps)?
       moment — this is a rehearsal/recording task for demo day, not more coding; the
       underlying failure handling it would show on camera (FSIS retry, PDF resumability)
       is now real and tested, not just planned.
-- [ ] Pub/Sub decoupling moment identified for the demo — blocked on Phase 3/GCP.
-- [ ] Firestore cross-session persistence moment identified for the demo — blocked on
-      Phase 3/GCP (the local storage stand-in already proves the concept — restart the
-      dashboard, data's still there — but the demo needs the real thing).
+- [x] **Pub/Sub decoupling moment now real, unblocked (2026-08-26)** — the live
+      Scheduler → Pub/Sub → Cloud Function chain built in Phase 3 is the actual moment
+      to show on camera; just needs rehearsing, not more building.
+- [x] **Firestore cross-session persistence now real, unblocked (2026-08-26)** — the
+      dashboard reads real Firestore on Cloud Run now (verified by writing a document
+      directly via the REST API and seeing it round-trip through the live app); just
+      needs rehearsing on camera, not more building.
 
 ## Phase 10 — Demo, docs, submission
 

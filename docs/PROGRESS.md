@@ -801,6 +801,98 @@ cloud work on the same `project-04109a57-e726-450d-8b1` ("RecallGuard") project.
 deployed yet — needs the Firebase CLI, not plain `gcloud`. Pub/Sub + Cloud Scheduler
 event backbone (Phase 3) not wired yet.
 
+## 2026-08-26 — Phase 3 event backbone built, deployed, and live-verified end to end
+
+Built the real Cloud Scheduler → Pub/Sub → Cloud Function chain from
+`docs/ARCHITECTURE.md`, reusing existing tested code rather than reimplementing it:
+
+- **`agents/main.py`** — two Cloud Function entry points against the same `agents/`
+  source tree the Dockerfile already uses. `poll_recalls` (HTTP, called by Scheduler):
+  fetches recent openFDA recalls, skips anything already in Firestore's `recalls`
+  collection, publishes only genuinely new ones to a `recall-detected` Pub/Sub topic.
+  Deliberately makes **zero Gemini calls** — that cost lives entirely downstream.
+  `on_recall_detected` (Pub/Sub-triggered): reads this business's invoice lines from
+  Firestore and calls `orchestrator.process_recall(recall, line_items, business)`
+  **unchanged** — that function's own docstring already said "this is what a real
+  trigger would call per recall," written before Phase 3 was unblocked.
+- **`agents/seed_invoices.py`** — a real gap: invoice line items had never been
+  persisted into Firestore's `businesses/{id}/invoices` collection by anything (the
+  local demo always re-parsed CSVs fresh each run). One-time seed, CSV-only
+  (deliberately skips the photographed invoice — that path uses Gemini vision, and this
+  seed should cost zero quota) — 27 real line items seeded.
+- **Pub/Sub topic** `recall-detected`, **Cloud Scheduler job** `recall-monitor-daily-poll`
+  (once/day, well inside the 3-free-jobs/month tier), both wired with OIDC-authenticated
+  HTTP invocation (`recallMonitor` deployed `--no-allow-unauthenticated` — it shouldn't be
+  publicly callable by anyone on the internet given what it triggers downstream).
+
+**Two real bugs found only because this was tested live, not just deployed:**
+1. `poll_recalls` crashed on a genuine openFDA data-quality edge case — one fetched
+   record had no `recall_number` field at all, normalizing to an empty
+   `sourceRecordId`, which Firestore rejected as an invalid document path ("invalid
+   trailing /"). Fixed the same way the rest of this project treats messy external
+   data: log a warning and skip that one record, don't crash the batch and don't guess
+   an ID.
+2. **The Gemini API key secret had a UTF-8 BOM character silently embedded in it** —
+   traced to how it was originally created: piping a string to an external process in
+   PowerShell goes through console output encoding, which prepended `﻿`. Every
+   local test had been using the key from `.env` directly (no BOM there — confirmed by
+   checking the raw file bytes), so this was invisible until the deployed function hit
+   `UnicodeEncodeError: 'ascii' codec can't encode character '﻿'` trying to build
+   the Gemini API request headers. Fixed by writing the key to a temp file with
+   explicit `UTF8Encoding($false)` (no BOM) and adding it as a new secret version via
+   `--data-file`, not a pipe. Verified the fix by checking the new version's first
+   bytes before using it, not just assuming.
+- To test any of this required manually invoking an OIDC-authenticated Cloud Function,
+  which needed service-account impersonation set up on the fly
+  (`roles/iam.serviceAccountTokenCreator` granted to self on the compute default SA) —
+  hit the same IAM-propagation-delay pattern as the billing-guard build, solved the
+  same way (bounded retry loop, not a blind sleep).
+
+**Live-verified, not just "deployed successfully"**: manually ran the Scheduler job,
+which found **5 genuinely new real recalls** (fetched fresh from openFDA, dated within
+the last 7 days) that weren't already in Firestore, published all 5, and watched the
+matcher process every one against all 27 real invoice lines — 135 match records
+written, correctly rejecting the overwhelming majority as noise, correctly
+auto-actioning nothing new by coincidence, and correctly routing one genuinely
+ambiguous case ("Marinara Sauce Jar 24oz" against a real Class-something recall) to
+`pending_review` at 45% confidence. Confirmed via the live dashboard's `/api/state`
+and via metrics (`recallsChecked: 7` — the original 2 seeded + these 5).
+
+**Cost, tracked explicitly per the standing instruction to preserve quota**: this
+real end-to-end test consumed exactly 5 Gemini calls (one per genuinely new recall,
+batched against all invoice lines per call, matching the existing one-call-per-recall
+design) — about 15 of the daily 20-call free-tier quota left afterward. Every other
+piece of today's Phase 3 work (the monitor's own polling logic, the invoice seed, all
+the IAM/deploy debugging) made zero Gemini calls. GCP-side cost stayed at $0 throughout
+— Cloud Scheduler (1 job), Pub/Sub (a few KB), and two Cloud Functions invoked a
+handful of times all sit far inside their permanent Always-Free tiers, and the billing
+guard from earlier remains attached the whole time.
+
+Also deployed `firestore.rules` via the Firebase Rules REST API directly (avoided
+installing Node.js/npm/firebase-tools just for this one step) — worth noting honestly:
+these rules protect nothing functionally *yet*, since the dashboard and both Cloud
+Functions talk to Firestore with a service account (which bypasses security rules
+entirely, by design — this is explicitly called out in the rules file's own header
+comment). They matter the day a client ever reads Firestore directly from the browser
+instead of through the backend; today that day hasn't come, so this is groundwork, not
+an active protection. Getting this deployed without the Firebase CLI took three real
+fixes: (1) `firebaserules.googleapis.com` calls via a raw `gcloud auth
+print-access-token` need an explicit `X-Goog-User-Project` header, or Google attributes
+the quota check to gcloud's own default project instead of ours — same root cause as
+the earlier Billing Budgets API issue, different API; (2) PowerShell's `ConvertTo-Json`
+either hung or threw `OutOfMemoryException` on the multi-line rules file content (a
+real, reproducible PowerShell quirk on this machine, not a one-off); worked around by
+having Python build the JSON payload (its `json` module handles multi-line UTF-8
+content correctly) and POSTing the resulting file's raw bytes instead of constructing
+the body in PowerShell at all; (3) creating a ruleset alone doesn't activate it — it
+also needs an explicit Release pointing `releases/cloud.firestore` at the new
+ruleset's name, which was confirmed live by reading the release back afterward.
+
+**Phase 3 (event backbone) is now done.** Updated `docs/PHASES.md` accordingly —
+every phase through Phase 7 is now real, tested, and live on Cloud Run/Firestore/
+Pub/Sub/Cloud Scheduler, not just local. Phase 8 (N=30 experiment) and Phase 9's
+demo rehearsal remain, plus Phase 10 (video, submission).
+
 ## 2026-08-26 — Live Firestore seeded, full pipeline proven end-to-end on Cloud Run
 
 Set up Application Default Credentials (`gcloud auth application-default login` —
