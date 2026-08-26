@@ -5,8 +5,9 @@ businesses/{businessId}
   name, address, contactEmail, registeredAt
 
 businesses/{businessId}/invoices/{invoiceId}
-  uploadedAt, sourceFileName, rawLineItems: [
-    { rawText, supplier, quantity, unit, dateReceived, parsedProduct?, parsedLot? }
+  sourceFileName, sourceType: "csv" | "image", supplier, uploadedAt
+  rawLineItems: [
+    { lineId, rawText, supplier, quantity, unit, dateReceived, parsedProduct?, parsedLot? }
   ]
 
 recalls/{recallId}                      # normalized, source-agnostic
@@ -21,7 +22,14 @@ recalls/{recallId}                      # normalized, source-agnostic
   rawSourcePayload                      # kept for audit/debug
 
 businesses/{businessId}/matches/{matchId}
-  recallId, invoiceId, invoiceLineRef
+  recallId, invoiceLineRef              # invoiceLineRef is a VALUE-COPY of one
+                                         # rawLineItems entry at match time, not a
+                                         # foreign key — but it carries invoiceId and
+                                         # lineId (embedded by the code that assembles
+                                         # the line list before matching), which is what
+                                         # makes a match traceable back to its source
+                                         # invoice. There is no separate top-level
+                                         # invoiceId field on the match itself.
   confidenceScore, reasoning            # the agent's stated reasoning — shown in the UI
   status: "auto_actioned" | "pending_review" | "rejected"
   createdAt

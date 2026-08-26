@@ -158,6 +158,51 @@
   .confirm{background:var(--rust); color:var(--enamel); border-color:#7d3320; box-shadow:0 3px 0 #7d3320;}
   .falsealarm{background:transparent; color:var(--steel); border-color:var(--steel);}
   .close-x{position:absolute; top:14px; right:18px; cursor:pointer; font-size:14px; color:#8a7f5f;}
+
+  /* Invoices — deliberately plain/undecorated, no pin/stamp motif (reserved for the
+     recall-to-invoice match visualization above, not lists/forms). */
+  .inv-toolbar{display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap;}
+  .inv-toolbar input[type="text"], .inv-toolbar select{
+    font-family:'Space Grotesk'; font-size:12px; padding:7px 10px; border:1px solid var(--line);
+    border-radius:4px; background:var(--enamel); color:var(--steel);
+  }
+  .dropzone{
+    border:2px dashed var(--line); border-radius:4px; padding:16px; text-align:center;
+    background:var(--enamel); margin-bottom:14px; font-size:12px; color:#6b6558;
+  }
+  .dropzone.dragover{border-color:var(--rust); background:#fdf7ec;}
+  .dropzone input[type="file"]{display:none;}
+  .dropzone .hint{font-size:10.5px; color:#8a7f5f; margin-top:6px;}
+  .inv-row{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--enamel); border:1px solid var(--line); border-radius:4px;
+    padding:10px 12px; margin-bottom:8px; font-size:12px;
+  }
+  .inv-row:hover{border-color:var(--rust);}
+  .inv-row .meta{display:flex; flex-direction:column; gap:2px; cursor:pointer;}
+  .inv-row .meta .fname{font-weight:700;}
+  .inv-row .meta .sub{font-size:10.5px; color:#6b6558;}
+  .inv-row .right{display:flex; align-items:center; gap:10px;}
+  .inv-pill{font-size:10px; letter-spacing:0.5px; text-transform:uppercase; padding:3px 9px; border-radius:20px;}
+  .inv-pill.clean{background:var(--green); color:var(--enamel);}
+  .inv-pill.flagged{background:var(--amber); color:var(--steel);}
+  .inv-pill.actioned{background:var(--rust); color:var(--enamel);}
+  .inv-del{cursor:pointer; color:#8a7f5f; font-size:13px;}
+  .inv-del:hover{color:var(--rust);}
+  .inv-field{display:flex; justify-content:space-between; font-size:12px; padding:6px 0; border-bottom:1px dashed var(--line);}
+  .inv-line{background:#fff; border:1px solid var(--line); border-radius:4px; padding:10px; margin-bottom:8px; font-family:'IBM Plex Mono'; font-size:11.5px;}
+  .inv-line .hist{margin-top:6px; font-family:'Space Grotesk'; font-size:11px; color:#5a5546;}
+  .inv-line .hist-row{padding:3px 0;}
+
+  /* Pre-existing gap, not introduced by Invoices: the two-column .grid had no mobile
+     breakpoint at all, so the Case Board's second column stayed wide enough to force
+     horizontal scroll on narrow viewports. Stack to one column below 860px. */
+  @media (max-width: 860px) {
+    body{padding:16px;}
+    header{flex-wrap:wrap; gap:12px;}
+    .grid{grid-template-columns: 1fr;}
+    .modal, .modal[style]{max-width:92vw !important;}
+  }
 </style>
 </head>
 <body>
@@ -207,6 +252,57 @@
   <div class="panel corkboard">
     <h2>Case Board</h2>
     <div class="cases" id="cases"></div>
+  </div>
+</div>
+
+<div class="panel" id="invoices-panel">
+  <h2>Invoices <span class="mono" style="font-size:10px;" id="inv-total">0 ON FILE</span></h2>
+
+  <form id="invoice-upload-form">
+    <div class="dropzone" id="dropzone">
+      <label for="invoice-file" style="cursor:pointer;">
+        <span class="btn">Choose File</span>
+        <span> or drag a CSV / photo here</span>
+      </label>
+      <input type="file" id="invoice-file" accept=".csv,.jpg,.jpeg,.png,.webp" required>
+      <div class="hint">CSV parsing is free and instant. A photo uses AI vision — costs one of today's limited free calls.</div>
+      <div id="upload-filename" class="hint mono"></div>
+    </div>
+    <div class="inv-toolbar">
+      <input type="text" id="upload-supplier" placeholder="Supplier (optional)">
+      <button class="btn" type="submit" id="upload-submit">Upload Invoice</button>
+      <span class="mono" id="upload-status" style="font-size:11px;"></span>
+    </div>
+  </form>
+
+  <div class="inv-toolbar">
+    <input type="text" id="inv-search" placeholder="Search filename or supplier...">
+    <select id="inv-status-filter">
+      <option value="">All statuses</option>
+      <option value="clean">Clean</option>
+      <option value="flagged">Flagged</option>
+      <option value="actioned">Auto-actioned</option>
+    </select>
+  </div>
+
+  <div id="invoice-list"></div>
+</div>
+
+<div class="modal-backdrop" id="invoice-modal-backdrop">
+  <div class="modal" style="max-width:680px;">
+    <span class="close-x" id="invoice-modal-close">✕ close</span>
+    <h1 class="display" style="font-size:20px; margin:0 0 10px;" id="inv-modal-filename">Invoice</h1>
+
+    <div class="inv-field"><span>Supplier</span><span class="mono" id="inv-modal-supplier"></span></div>
+    <div class="inv-field"><span>Uploaded</span><span class="mono" id="inv-modal-uploaded"></span></div>
+    <div class="inv-field"><span>Source</span><span class="mono" id="inv-modal-source"></span></div>
+
+    <div style="margin-top:14px; max-height:340px; overflow-y:auto;" id="inv-modal-lines"></div>
+
+    <div class="actions">
+      <button class="stampbtn falsealarm" id="inv-export-btn">Export CSV</button>
+      <button class="stampbtn confirm" id="inv-delete-btn" style="background:var(--steel); border-color:var(--steel); box-shadow:0 3px 0 #17181a;">Delete Invoice</button>
+    </div>
   </div>
 </div>
 
@@ -336,8 +432,178 @@ document.getElementById('modal-close').addEventListener('click', closeModal);
 document.getElementById('btn-confirm').addEventListener('click', () => decide('confirm'));
 document.getElementById('btn-reject').addEventListener('click', () => decide('reject'));
 
+// --- Invoices ---
+let currentInvoiceId = null;
+let currentInvoiceDetail = null;
+
+async function loadInvoices() {
+  // Search/filter inputs live outside this function's rebuilt container (#invoice-list)
+  // specifically so a 5s poll tick never wipes out what the user is mid-typing.
+  const q = document.getElementById('inv-search').value;
+  const status = document.getElementById('inv-status-filter').value;
+  const params = new URLSearchParams({ q, status });
+  const res = await fetch('/api/invoices?' + params.toString());
+  renderInvoices(await res.json());
+}
+
+function renderInvoices(invoices) {
+  document.getElementById('inv-total').textContent = `${invoices.length} ON FILE`;
+  const list = document.getElementById('invoice-list');
+  list.innerHTML = '';
+  if (invoices.length === 0) {
+    list.innerHTML = '<div class="empty">No invoices uploaded yet.</div>';
+    return;
+  }
+  invoices.forEach(inv => {
+    const status = inv.flaggedCount > 0 ? 'flagged' : (inv.autoActionedCount > 0 ? 'actioned' : 'clean');
+    const label = status === 'flagged' ? `${inv.flaggedCount} flagged`
+                : status === 'actioned' ? `${inv.autoActionedCount} auto-actioned`
+                : 'All clear';
+    const row = document.createElement('div');
+    row.className = 'inv-row';
+    row.innerHTML = `
+      <div class="meta">
+        <span class="fname">${escapeHtml(inv.sourceFileName)}</span>
+        <span class="sub">${escapeHtml(inv.supplier)} · ${inv.lineCount} lines · ${new Date(inv.uploadedAt).toLocaleDateString()}</span>
+      </div>
+      <div class="right">
+        <span class="inv-pill ${status}">${label}</span>
+        <span class="inv-del" data-id="${inv._id}" title="Delete">✕</span>
+      </div>
+    `;
+    row.querySelector('.meta').addEventListener('click', () => openInvoiceModal(inv._id));
+    row.querySelector('.inv-del').addEventListener('click', (e) => { e.stopPropagation(); deleteInvoice(inv._id); });
+    list.appendChild(row);
+  });
+}
+
+async function openInvoiceModal(invoiceId) {
+  const res = await fetch(`/api/invoices/${invoiceId}`);
+  if (!res.ok) return;
+  currentInvoiceDetail = await res.json();
+  currentInvoiceId = invoiceId;
+
+  document.getElementById('inv-modal-filename').textContent = currentInvoiceDetail.sourceFileName;
+  document.getElementById('inv-modal-supplier').textContent = currentInvoiceDetail.supplier;
+  document.getElementById('inv-modal-uploaded').textContent = new Date(currentInvoiceDetail.uploadedAt).toLocaleString();
+  document.getElementById('inv-modal-source').textContent =
+    currentInvoiceDetail.sourceType === 'image' ? 'Photographed invoice (Gemini vision)' : 'CSV upload';
+
+  const linesDiv = document.getElementById('inv-modal-lines');
+  linesDiv.innerHTML = '';
+  currentInvoiceDetail.lines.forEach(line => {
+    const div = document.createElement('div');
+    div.className = 'inv-line';
+    let historyHtml = '<div class="hist" style="color:#8a7f5f;">Never checked against a recall yet.</div>';
+    if (line.matchHistory.length > 0) {
+      historyHtml = '<div class="hist">' + line.matchHistory.map(h => {
+        const dot = h.status === 'auto_actioned' ? '🔴' : h.status === 'pending_review' ? '🟡' : '⚪';
+        return `<div class="hist-row">${dot} ${h.confidenceScore}% vs ${escapeHtml(h.recallId || '')} — ${escapeHtml(h.status || '')}</div>`;
+      }).join('') + '</div>';
+    }
+    div.innerHTML = `${escapeHtml(line.rawText)} · ${escapeHtml(line.quantity || '')} ${escapeHtml(line.unit || '')}${historyHtml}`;
+    linesDiv.appendChild(div);
+  });
+
+  document.getElementById('invoice-modal-backdrop').classList.add('open');
+}
+
+function closeInvoiceModal() {
+  document.getElementById('invoice-modal-backdrop').classList.remove('open');
+  currentInvoiceId = null;
+  currentInvoiceDetail = null;
+}
+
+async function deleteInvoice(invoiceId) {
+  if (!confirm('Delete this invoice? This cannot be undone.')) return;
+  await fetch(`/api/invoices/${invoiceId}`, { method: 'DELETE' });
+  closeInvoiceModal();
+  loadInvoices();
+}
+
+function exportInvoiceCsv() {
+  if (!currentInvoiceDetail) return;
+  const rows = [['rawText', 'supplier', 'quantity', 'unit', 'dateReceived', 'latestStatus', 'confidenceScore']];
+  currentInvoiceDetail.lines.forEach(line => {
+    const latest = line.matchHistory[0];
+    rows.push([
+      line.rawText, line.supplier, line.quantity, line.unit, line.dateReceived,
+      latest ? latest.status : 'unchecked', latest ? latest.confidenceScore : '',
+    ]);
+  });
+  const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${currentInvoiceDetail.sourceFileName}-reconciliation.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+const dropzone = document.getElementById('dropzone');
+const invoiceFileInput = document.getElementById('invoice-file');
+invoiceFileInput.addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  document.getElementById('upload-filename').textContent = f ? f.name : '';
+});
+['dragenter', 'dragover'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  dropzone.classList.add('dragover');
+}));
+['dragleave', 'drop'].forEach(evt => dropzone.addEventListener(evt, (e) => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+}));
+dropzone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    invoiceFileInput.files = e.dataTransfer.files;
+    document.getElementById('upload-filename').textContent = file.name;
+  }
+});
+
+document.getElementById('invoice-upload-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const file = invoiceFileInput.files[0];
+  if (!file) return;
+
+  const submitBtn = document.getElementById('upload-submit');
+  const statusSpan = document.getElementById('upload-status');
+  submitBtn.disabled = true; // structurally prevents a double-click double-charging a photo upload
+  statusSpan.textContent = 'Uploading...';
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('business_id', 'demo-biz-1');
+    const supplier = document.getElementById('upload-supplier').value;
+    if (supplier) formData.append('supplier', supplier);
+
+    const res = await fetch('/api/invoices/upload', { method: 'POST', body: formData });
+    if (!res.ok) {
+      const err = await res.json();
+      statusSpan.textContent = 'Failed: ' + (err.detail || res.status);
+    } else {
+      statusSpan.textContent = 'Uploaded.';
+      invoiceFileInput.value = '';
+      document.getElementById('upload-filename').textContent = '';
+      document.getElementById('upload-supplier').value = '';
+      loadInvoices();
+    }
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+document.getElementById('inv-search').addEventListener('input', loadInvoices);
+document.getElementById('inv-status-filter').addEventListener('change', loadInvoices);
+document.getElementById('invoice-modal-close').addEventListener('click', closeInvoiceModal);
+document.getElementById('inv-delete-btn').addEventListener('click', () => currentInvoiceId && deleteInvoice(currentInvoiceId));
+document.getElementById('inv-export-btn').addEventListener('click', exportInvoiceCsv);
+
 loadState();
-setInterval(loadState, 5000); // near-real-time refresh, matches docs/ARCHITECTURE.md's UI description
+loadInvoices();
+setInterval(() => { loadState(); loadInvoices(); }, 5000); // near-real-time refresh, matches docs/ARCHITECTURE.md's UI description
 </script>
 </body>
 </html>

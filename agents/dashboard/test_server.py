@@ -8,6 +8,7 @@ import shutil
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -148,6 +149,117 @@ class TestDashboardApi(unittest.TestCase):
         storage.save("businesses", BUSINESS["id"], {**BUSINESS, "registeredAt": "2020-01-01T00:00:00+00:00"})
         state = self.client.get(f"/api/state?business_id={BUSINESS['id']}").json()
         self.assertGreater(state["streakDays"], 365)
+
+    # --- Invoices ---
+
+    def test_upload_csv_creates_grouped_invoice(self):
+        csv_bytes = b"description,qty,unit,date\nChicken Breast,2,case,2026-08-01\nGround Beef,1,case,2026-08-01\n"
+        resp = self.client.post(
+            "/api/invoices/upload",
+            files={"file": ("delivery.csv", csv_bytes, "text/csv")},
+            data={"business_id": BUSINESS["id"]},
+        )
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(body["sourceType"], "csv")
+        self.assertEqual(len(body["rawLineItems"]), 2)
+        self.assertTrue(all("lineId" in line for line in body["rawLineItems"]))
+
+    def test_upload_image_calls_parser_exactly_once(self):
+        fake_lines = [{
+            "rawText": "Test Item", "supplier": "Acme", "quantity": "1", "unit": "case",
+            "dateReceived": "2026-08-01", "parsedProduct": None, "parsedLot": None,
+        }]
+        with mock.patch.object(server.image_parser, "parse_image", return_value=fake_lines) as mocked:
+            resp = self.client.post(
+                "/api/invoices/upload",
+                files={"file": ("photo.jpg", b"fake-image-bytes", "image/jpeg")},
+                data={"business_id": BUSINESS["id"]},
+            )
+        self.assertEqual(resp.status_code, 200)
+        mocked.assert_called_once()  # never call Gemini more than once per upload
+
+    def test_upload_rejects_unsupported_extension(self):
+        resp = self.client.post(
+            "/api/invoices/upload",
+            files={"file": ("invoice.pdf", b"whatever", "application/pdf")},
+            data={"business_id": BUSINESS["id"]},
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    def test_upload_empty_csv_returns_422(self):
+        resp = self.client.post(
+            "/api/invoices/upload",
+            files={"file": ("empty.csv", b"description,qty,unit,date\n", "text/csv")},
+            data={"business_id": BUSINESS["id"]},
+        )
+        self.assertEqual(resp.status_code, 422)
+
+    def test_list_invoices_reflects_reconciliation_counts(self):
+        upload = self.client.post(
+            "/api/invoices/upload",
+            files={"file": ("supplierx.csv", b"description,qty,unit,date\nItem A,1,case,2026-08-01\n", "text/csv")},
+            data={"business_id": BUSINESS["id"]},
+        ).json()
+        storage.save(
+            f"businesses/{BUSINESS['id']}/matches", "m-inv-1",
+            {
+                "recallId": RECALL["sourceRecordId"],
+                "invoiceLineRef": {**upload["rawLineItems"][0], "invoiceId": upload["_id"]},
+                "confidenceScore": 90, "reasoning": "x", "status": "auto_actioned",
+                "createdAt": "2026-08-01T00:00:00Z",
+            },
+        )
+
+        resp = self.client.get(f"/api/invoices?business_id={BUSINESS['id']}")
+        self.assertEqual(resp.status_code, 200)
+        invoices = resp.json()
+        self.assertEqual(len(invoices), 1)
+        self.assertEqual(invoices[0]["autoActionedCount"], 1)
+
+    def test_invoice_detail_returns_match_history(self):
+        upload = self.client.post(
+            "/api/invoices/upload",
+            files={"file": ("supplierz.csv", b"description,qty,unit,date\nItem B,1,case,2026-08-01\n", "text/csv")},
+            data={"business_id": BUSINESS["id"]},
+        ).json()
+
+        resp = self.client.get(f"/api/invoices/{upload['_id']}?business_id={BUSINESS['id']}")
+        self.assertEqual(resp.status_code, 200)
+        detail = resp.json()
+        self.assertEqual(len(detail["lines"]), 1)
+        self.assertEqual(detail["lines"][0]["matchHistory"], [])
+
+    def test_invoice_detail_404_for_unknown_id(self):
+        resp = self.client.get(f"/api/invoices/does-not-exist?business_id={BUSINESS['id']}")
+        self.assertEqual(resp.status_code, 404)
+
+    def test_search_filter_narrows_results(self):
+        csv_bytes = b"description,qty,unit,date\nItem,1,case,2026-08-01\n"
+        self.client.post("/api/invoices/upload", files={"file": ("sysco_order.csv", csv_bytes, "text/csv")}, data={"business_id": BUSINESS["id"]})
+        self.client.post("/api/invoices/upload", files={"file": ("usfoods_order.csv", csv_bytes, "text/csv")}, data={"business_id": BUSINESS["id"]})
+
+        resp = self.client.get(f"/api/invoices?business_id={BUSINESS['id']}&q=sysco")
+        invoices = resp.json()
+        self.assertEqual(len(invoices), 1)
+        self.assertIn("sysco", invoices[0]["sourceFileName"].lower())
+
+    def test_delete_invoice_then_404s(self):
+        upload = self.client.post(
+            "/api/invoices/upload",
+            files={"file": ("todelete.csv", b"description,qty,unit,date\nItem,1,case,2026-08-01\n", "text/csv")},
+            data={"business_id": BUSINESS["id"]},
+        ).json()
+
+        resp = self.client.delete(f"/api/invoices/{upload['_id']}?business_id={BUSINESS['id']}")
+        self.assertEqual(resp.status_code, 200)
+
+        resp2 = self.client.get(f"/api/invoices/{upload['_id']}?business_id={BUSINESS['id']}")
+        self.assertEqual(resp2.status_code, 404)
+
+    def test_delete_unknown_invoice_returns_404(self):
+        resp = self.client.delete(f"/api/invoices/does-not-exist?business_id={BUSINESS['id']}")
+        self.assertEqual(resp.status_code, 404)
 
 
 if __name__ == "__main__":

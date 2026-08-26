@@ -27,7 +27,9 @@ from google.cloud import pubsub_v1
 
 AGENTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(AGENTS_DIR / "ingestion"))
+sys.path.insert(0, str(AGENTS_DIR / "invoices"))
 
+import invoice_store  # noqa: E402
 import normalize  # noqa: E402
 import openfda_client  # noqa: E402
 import orchestrator  # noqa: E402
@@ -79,14 +81,16 @@ def poll_recalls(request):
 @functions_framework.cloud_event
 def on_recall_detected(cloud_event):
     """Pub/Sub entry point — one genuinely new recall per invocation. Reads this
-    business's invoice line items from Firestore (seeded by seed_invoices.py) and runs
-    the exact same tested pipeline used locally, unchanged."""
+    business's invoice line items from every uploaded invoice (each line carrying its
+    own invoiceId, via invoice_store.flatten_invoice_lines — this is what makes a
+    resulting match traceable back to its source invoice) and runs the exact same
+    tested pipeline used locally, unchanged."""
     pubsub_message = cloud_event.data["message"]
     raw = base64.b64decode(pubsub_message["data"]).decode("utf-8")
     recall = json.loads(raw)
 
     business = storage.get("businesses", DEMO_BUSINESS_ID) or {"id": DEMO_BUSINESS_ID}
-    line_items = storage.list_collection(f"businesses/{DEMO_BUSINESS_ID}/invoices")
+    line_items = invoice_store.flatten_invoice_lines(DEMO_BUSINESS_ID)
     if not line_items:
         return
     orchestrator.process_recall(recall, line_items, business)

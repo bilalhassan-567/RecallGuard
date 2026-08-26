@@ -70,5 +70,12 @@ def list_collection(collection_path: str) -> list[dict[str, Any]]:
     return results
 
 
+def delete(collection_path: str, doc_id: str) -> None:
+    if USE_FIRESTORE:
+        _client().collection(collection_path).document(doc_id).delete()
+        return
+    _doc_path(collection_path, doc_id).unlink(missing_ok=True)
+
+
 def _doc_path(collection_path: str, doc_id: str) -> Path:
     return DATA_DIR / collection_path / f"{doc_id}.json"

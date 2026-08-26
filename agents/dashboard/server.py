@@ -7,16 +7,21 @@ Run from agents/: uvicorn dashboard.server:app --reload --port 8000
 Then open http://127.0.0.1:8000/
 """
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # agents/ (orchestrator.py, storage.py)
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # this dir (us_state_positions.py) —
 # needed because uvicorn loads this file as the `dashboard` package's `server` submodule,
 # so its own directory isn't on sys.path the way a standalone script's would be.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "invoices"))
+import csv_parser  # noqa: E402
+import image_parser  # noqa: E402
+import invoice_store  # noqa: E402
 import orchestrator  # noqa: E402
 import storage  # noqa: E402
 import us_state_positions  # noqa: E402
@@ -76,6 +81,84 @@ def confirm_review(match_id: str, business_id: str = DEFAULT_BUSINESS_ID) -> dic
 @app.post("/api/review/{match_id}/reject")
 def reject_review(match_id: str, business_id: str = DEFAULT_BUSINESS_ID) -> dict:
     return _resolve(business_id, match_id, "rejected")
+
+
+SUPPORTED_IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png", ".webp")
+
+
+@app.get("/api/invoices")
+def list_invoices(business_id: str = DEFAULT_BUSINESS_ID, q: str = "", status: str = "") -> list[dict]:
+    invoices = invoice_store.list_invoices(business_id)
+    if q:
+        q_lower = q.lower()
+        invoices = [
+            inv for inv in invoices
+            if q_lower in inv["sourceFileName"].lower() or q_lower in inv["supplier"].lower()
+        ]
+    if status:
+        invoices = [inv for inv in invoices if _invoice_status(inv) == status]
+    return invoices
+
+
+@app.get("/api/invoices/{invoice_id}")
+def get_invoice(invoice_id: str, business_id: str = DEFAULT_BUSINESS_ID) -> dict:
+    detail = invoice_store.get_invoice_detail(business_id, invoice_id)
+    if detail is None:
+        raise HTTPException(status_code=404, detail=f"no invoice {invoice_id}")
+    return detail
+
+
+@app.post("/api/invoices/upload")
+async def upload_invoice(
+    file: UploadFile = File(...),
+    business_id: str = Form(DEFAULT_BUSINESS_ID),
+    supplier: str | None = Form(None),
+) -> dict:
+    suffix = Path(file.filename or "").suffix.lower()
+    if suffix == ".csv":
+        source_type = "csv"
+    elif suffix in SUPPORTED_IMAGE_SUFFIXES:
+        source_type = "image"
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"unsupported file type {suffix!r} — use .csv or a photo ({', '.join(SUPPORTED_IMAGE_SUFFIXES)})",
+        )
+
+    contents = await file.read()
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(contents)
+        tmp_path = tmp.name
+
+    try:
+        # Exactly one parser call per upload request — the only Gemini cost in this
+        # endpoint is this single parse_image call, never retried or called twice.
+        lines = csv_parser.parse_csv(tmp_path, supplier=supplier) if source_type == "csv" \
+            else image_parser.parse_image(tmp_path, supplier=supplier)
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+    try:
+        return invoice_store.create_invoice(
+            business_id, file.filename or "unnamed", source_type, lines, supplier=supplier
+        )
+    except ValueError as err:
+        raise HTTPException(status_code=422, detail=str(err))
+
+
+@app.delete("/api/invoices/{invoice_id}")
+def delete_invoice(invoice_id: str, business_id: str = DEFAULT_BUSINESS_ID) -> dict:
+    if not invoice_store.delete_invoice(business_id, invoice_id):
+        raise HTTPException(status_code=404, detail=f"no invoice {invoice_id}")
+    return {"deleted": True}
+
+
+def _invoice_status(inv: dict) -> str:
+    if inv["flaggedCount"] > 0:
+        return "flagged"
+    if inv["autoActionedCount"] > 0:
+        return "actioned"
+    return "clean"
 
 
 def _resolve(business_id: str, match_id: str, decision: str) -> dict:
