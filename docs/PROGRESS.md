@@ -1017,3 +1017,47 @@ existing live test, which wasn't the intent (should have run
 `test_invoice_store test_csv_parser` explicitly to stay fully offline) — a real,
 disclosed mistake, not hidden. Combined with the 5 calls from the event-backbone test
 earlier the same day, **6 of the 20 daily free Gemini calls used today, 14 remaining.**
+
+## 2026-08-26 — N=30 completed, EXPERIMENT.md finalized, architecture diagram corrected, failure-injection demo built and tested
+
+Four remaining items tackled in one pass at the user's request:
+
+- **Ran the remaining 11/30 benchmark recalls** (`experiment.run_benchmark --limit 11`)
+  — 30/30 now scored. `experiment.summarize_results`: **100% precision, 100% recall,
+  0 false negatives, 0 false positives (dangerous or soft), mean time-to-detection
+  13.44s.** Cost 11 real Gemini calls, leaving ~3 of today's 20-call quota — spent
+  deliberately on this since it's a real, needed number for the submission, not
+  incidental testing.
+- **`docs/EXPERIMENT.md` updated with the final agent-side table**, replacing the
+  19/30 partial numbers. Kept the reporting-discipline honesty the doc already commits
+  to: explicitly flagged that **the human baseline is still 0/30** (needs the user's
+  own time, can't be run by an AI without fabricating the comparison this experiment
+  exists to make) — this is a completed half, not a completed experiment. Also flagged
+  a real caveat rather than let a suspiciously clean number stand unexplained: 0/30
+  escalations to review is a property of this N=30 corpus's design (no deliberately
+  ambiguous case, unlike the 5-line demo set), not evidence the escalation path doesn't
+  work — that behavior is real and separately demonstrated elsewhere.
+- **`docs/ARCHITECTURE.md` corrected to match what's actually deployed**, not the
+  original planning-stage design. Real inaccuracies fixed: it said "Vertex AI (Gemini)"
+  — we deliberately use the free Gemini Developer API instead, specifically to stay
+  off Vertex's no-free-tier billing; it showed three separate "Cloud Run" services for
+  Monitor/Matching/Action — the real deployment is two Cloud Functions (HTTP-triggered
+  Monitor, Pub/Sub-triggered Matching+Action in one function), with only the dashboard
+  actually on Cloud Run; the Pub/Sub topic was named `recall.detected` in the diagram
+  vs. the real deployed `recall-detected`. Added the Invoices upload path, which didn't
+  exist when this diagram was first drawn. The diagram is a real Mermaid flowchart,
+  which GitHub renders natively — this was likely already satisfying "clean visual"
+  once accurate, not something needing a separate graphic tool.
+- **Built and verified a real failure-injection demo**, `agents/demo_failure_injection.py`
+  — not mocked: replaces `agents/local_data/artifacts` (normally a directory) with a
+  plain file, so `pdf_export.write_compliance_pdf`'s own `mkdir(...)` genuinely raises
+  an OS error. Shows the checklist/notification drafts already survived in the
+  per-step progress state before the crash, removes the injected failure, re-runs to a
+  real completed PDF. Costs zero Gemini quota (Action Agent has no LLM calls at all),
+  so it was rehearsed and verified twice in a row before being called demo-ready — a
+  genuinely repeatable ~5-6s script beat, not a one-off that might not reproduce on
+  camera. Updated `docs/submission/demo-video-script.md`'s failure-injection beat and
+  its "proof of Cloud" beat (which incorrectly referenced Vertex AI logs) to match.
+
+**Still open**: human baseline (needs the user), a genuine photographed invoice (needs
+the user), the actual video recording, and final Devpost submission text.

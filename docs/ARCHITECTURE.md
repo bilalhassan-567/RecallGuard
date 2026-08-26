@@ -3,41 +3,48 @@
 ```mermaid
 flowchart TB
     subgraph Sources["Recall sources"]
-        FSIS["FSIS Recall API<br/>near-real-time"]
+        FSIS["FSIS Recall API<br/>near-real-time (geo-blocked in dev — see Risk Register)"]
         FDA["openFDA enforcement<br/>weekly, historical"]
     end
 
-    subgraph Monitor["Recall Monitor (ADK agent #1) — Cloud Run"]
-        MON["Normalizes both sources into a structured recall event<br/>Cloud Scheduler triggers the poll"]
+    SCHED["Cloud Scheduler<br/>daily poll trigger"]
+
+    subgraph Monitor["Recall Monitor (agent #1) — Cloud Function, HTTP-triggered"]
+        MON["Normalizes new recalls, dedups against Firestore<br/>never calls Gemini"]
     end
 
-    TOPIC["Pub/Sub topic: recall.detected"]
+    TOPIC["Pub/Sub topic: recall-detected"]
 
-    subgraph Matching["Matching Agent (ADK agent #2, Gemini) — Cloud Run"]
-        MATCH["Fuzzy-matches recall vs. invoice line items<br/>returns confidence 0-100 + stated reasoning"]
+    subgraph MatchAction["Matching + Action Agents (#2, #3) — one Cloud Function, Pub/Sub-triggered"]
+        MATCH["Matching Agent (Gemini): fuzzy-matches recall vs. invoice line items<br/>returns confidence 0-100 + stated reasoning"]
+        ACT["Action Agent: drafts pull-checklist, notification, compliance record<br/>no LLM calls — deterministic templating only"]
+        MATCH -->|confidence >= 80| ACT
     end
 
+    UPLOAD["Business user uploads invoice<br/>(CSV or photo) via the dashboard"]
     FS[("Firestore<br/>businesses/{id}/invoices, matches, review_queue, compliance_log")]
 
-    subgraph Action["Action Agent (ADK agent #3) — Cloud Run"]
-        ACT["Drafts pull-checklist, notification, compliance record"]
-    end
-
     REVIEW["Human Review Queue<br/>(Firestore doc, surfaced in UI)"]
-    UI["Dashboard / UI — Cloud Run frontend<br/>reads Firestore in near-real-time"]
+    UI["Dashboard — Cloud Run<br/>reads Firestore in near-real-time"]
 
-    FSIS --> MON
+    SCHED --> MON
+    FSIS -.-> MON
     FDA --> MON
-    MON -->|publish| TOPIC
-    TOPIC -->|subscribe, per business| MATCH
-    MATCH <-->|reads invoice data| FS
-    MATCH -->|confidence >= 80| ACT
+    MON -->|publish, new recalls only| TOPIC
+    TOPIC -->|push| MATCH
+    UPLOAD --> FS
+    MATCH <-->|reads invoice lines, writes match record| FS
     MATCH -->|confidence 40-79| REVIEW
     MATCH -.->|confidence < 40, discarded + logged| FS
     ACT --> FS
     REVIEW --> FS
     FS --> UI
+    UI --> UPLOAD
 ```
+
+*(FSIS is dashed above — the client is built and tested, but geo-blocked from this dev
+environment; openFDA is the confirmed-working live trigger source today. See
+`docs/RISK_REGISTER.md`.)*
 
 ## Why three agents, not one or six
 
@@ -65,11 +72,13 @@ jobs: **sense → decide → act.**
 
 | Service | Role |
 |---|---|
-| Cloud Run | Hosts monitor, matching, action, and dashboard services; scales to zero between polls |
+| Cloud Run | Hosts the dashboard (upload UI, case board, review queue) — scales to zero when idle |
+| Cloud Functions (gen2) | Hosts the Recall Monitor (HTTP-triggered) and the Matching+Action pipeline (Pub/Sub-triggered) — same free-tier, no separate always-on services needed |
 | Pub/Sub | Decouples detection from matching — async, retryable, fans out per business |
 | Firestore | Persistent per-business state across sessions; NoSQL fits variable invoice schemas |
-| Vertex AI (Gemini) | The reasoning engine for fuzzy matching + drafting |
-| Cloud Scheduler | Triggers the Recall Monitor poll — the one deterministic piece; the agentic value is downstream |
+| Gemini API (Developer API / AI Studio key) | The reasoning engine for fuzzy matching, both locally and from the deployed Cloud Function — deliberately **not** Vertex AI, since Vertex has no free tier and this project stays inside Always-Free-tier billing everywhere it can; a one-line env flip (`GOOGLE_GENAI_USE_VERTEXAI=TRUE`) is all a future move to Vertex would need |
+| Cloud Scheduler | Triggers the Recall Monitor poll, once daily — the one deterministic piece; the agentic value is downstream |
+| Secret Manager | Delivers the Gemini API key to both Cloud Run and the Cloud Functions — never a plain env var |
 
 ## Data model and agent logic
 

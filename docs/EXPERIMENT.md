@@ -51,33 +51,42 @@ comparison is fair.
 
 ## Results
 
-**In progress as of 2026-08-24 — this is a partial run, not the final numbers.** 19/30
-recalls scored on the agent side, 0/30 on the human baseline side yet. Reporting the
-partial numbers now anyway, per the reporting discipline above — better to show real
-in-progress data than withhold it until it's "finished," which risks looking
-retroactively cleaned up:
+**Agent side complete as of 2026-08-26 — full N=30, not a partial run.** Human baseline
+side is still 0/30 — that half needs a real unaided person's time and hasn't happened
+yet (see `docs/PHASES.md` Phase 8). Reporting the agent numbers now anyway, per the
+reporting discipline above — the success threshold in this doc explicitly requires a
+comparison against the human baseline, so **this is not yet a completed experiment**,
+just a completed half of one:
 
-| Metric (agent, n=19 of 30) | Value |
+| Metric (agent, full n=30) | Value |
 |---|---|
-| Detected | 19/19 |
-| Correctly auto-actioned | 19/19 |
-| Correctly escalated for review | 0/19 |
-| Missed (false negatives) | 0/19 |
+| Detected | 30/30 |
+| Correctly auto-actioned | 30/30 |
+| Correctly escalated for review | 0/30 |
+| Missed (false negatives) | 0/30 |
 | Dangerous false positives (wrongly auto-actioned) | 0 |
 | Soft false positives (wrongly escalated) | 0 |
 | Precision (on auto-actioned decisions) | 100% |
 | Recall | 100% |
-| Mean time-to-detection | 12.7s |
+| Mean time-to-detection | 13.44s |
 
 This is a genuinely clean run, not a cherry-picked one — two of the three near-miss
 distractors (`TWIN SIS CHEDDAR CHEESE 2LB`, `UNCLE RAYS BBQ KETTLE CHIPS 8OZ`) were
-already tested against their real related recalls in this batch and correctly rejected
-both times, which is real evidence the false-positive-avoidance behavior holds, not an
-artifact of an easy test set. That said, 100% across 19 cases with zero human baseline
-yet is exactly the kind of number this doc's own reporting discipline warns not to
-present as final — the honest status is "encouraging, incomplete." Update this table
-(don't just append) once `experiment.summarize_results` and `experiment.
-summarize_baseline` both report 30/30.
+tested against their real related recalls in this batch and correctly rejected every
+time, which is real evidence the false-positive-avoidance behavior holds across the
+full set, not an artifact of an easy test set.
+
+**One honest caveat worth stating plainly, per this doc's own reporting discipline: 0/30
+escalated to review is a property of this specific 37-line corpus, not evidence the
+escalation path doesn't work.** This N=30 invoice corpus was built with clear true
+positives, near-misses, and easy negatives — it doesn't include a deliberately
+ambiguous, partial-match case the way the smaller 5-line demo dataset does (the
+no-lot-code "Mexican Style Cottage Cheese" case, which correctly routes to
+`pending_review` at 55-60% confidence, tested and confirmed separately — see
+`docs/PHASES.md` Phase 5/8). A 100% precision/recall number with zero escalations
+reads as suspiciously clean in isolation; the actual escalation behavior is real and
+demonstrated, just not exercised by this particular N=30 set's design. Worth adding a
+deliberately-ambiguous case to a future, larger N if this experiment is extended.
 
 ### A second, automated comparison point (not the human baseline)
 

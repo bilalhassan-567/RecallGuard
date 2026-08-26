@@ -380,10 +380,14 @@ work wraps)?
       model did not auto-action anything and did not echo the injected string — the
       guard held under a real attempt, not just by design.
       (`test_matching_agent.py::TestPromptInjectionGuard`.)
-- [ ] Live failure-injection demo beat rehearsed until it's a clean ~15s repeatable
-      moment — this is a rehearsal/recording task for demo day, not more coding; the
-      underlying failure handling it would show on camera (FSIS retry, PDF resumability)
-      is now real and tested, not just planned.
+- [x] **Live failure-injection demo beat built, tested, and repeatable (2026-08-26)** —
+      `agents/demo_failure_injection.py`. Not mocked: replaces the artifacts folder with
+      a blocking file, causing `pdf_export.write_compliance_pdf` to genuinely raise an
+      OS error; shows the checklist/notification drafts already survived (per-step
+      progress state) before the crash; un-blocks and re-runs to completion without
+      regenerating anything. Zero Gemini cost (Action Agent has no LLM calls) — verified
+      working twice in a row before calling it demo-ready. Only remaining step is the
+      actual on-camera recording, which is a video-production task, not more building.
 - [x] **Pub/Sub decoupling moment now real, unblocked (2026-08-26)** — the live
       Scheduler → Pub/Sub → Cloud Function chain built in Phase 3 is the actual moment
       to show on camera; just needs rehearsing, not more building.
