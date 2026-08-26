@@ -1155,3 +1155,31 @@ result). Found and fixed two unrelated but real accuracy gaps while doing this p
 FSIS (near-real-time)" — FSIS is geo-blocked and not actually live, only openFDA is —
 and the "Try it" section was still a placeholder despite the dashboard being live at a
 real URL for over a day. Both fixed.
+
+## 2026-08-27 — Second full rules recheck, this time pasted directly from a logged-in session
+
+User pasted the entire live hackathon page, including their own account's registered
+to-do list — something a plain fetch can't see (no login). Good confirmation pass:
+deadline, prize structure, judging weights, and eligibility are all unchanged from the
+2026-08-26 check. Two genuinely new, concrete, actionable facts surfaced:
+
+- **Video hosting is a hard requirement, not a suggestion**: "must be uploaded to and
+  made publicly visible on YouTube or Vimeo" — not Drive, not Loom, not unlisted-only.
+  Also confirmed the 4-minute cap is a hard cutoff, not a soft target: "If it is longer
+  than 4 minutes, only the first 4 minutes may be evaluated." Added both to
+  `docs/submission/demo-video-script.md`'s recording checklist.
+- **"Register for GEAR" on the account to-do list is optional, not a submission
+  requirement.** GEAR (Gemini Enterprise Agent Ready) is a free Google skilling program
+  described as "the ideal on-ramp" — nowhere in the actual "What to Submit" or
+  "Mandatory Tech" sections. Confirmed and noted so it's not mistaken for a blocker.
+
+Also confirmed explicitly, in the rules' own words this time: using an AI coding
+assistant is allowed without special disclosure ("Participants may use standard
+development tools, including frameworks, libraries, starter templates, and AI coding
+assistants") — only genuinely pre-existing/third-party project work needs disclosing,
+which doesn't apply here (repo built fresh within the submission period).
+
+Rewrote `docs/submission/submission-checklist.md` end to end — it had drifted badly
+(showed "Not started" for the category selection, the live URL, and the architecture
+diagram, all of which have been done for days). Now accurately reflects that only the
+video recording and the narrative sections of the description remain.

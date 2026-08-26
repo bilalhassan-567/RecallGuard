@@ -332,3 +332,12 @@ sections above.)*
     Honorable Mentions $2,000 (5 winners). Confirms Taskmaster + Individual/Hobbyist +
     Best Architectural Design + Best Multimodal UX are all genuinely live, stackable
     targets for a solo entrant — matches the strategy already locked in this doc.
+- **2026-08-27 (re-checked again, this time from a logged-in account's full page —
+  catches things a plain fetch can't see)** — Deadline, prize structure, judging
+  weights, and eligibility all unchanged. Two new concrete facts: **the demo video must
+  be uploaded to and publicly visible on YouTube or Vimeo specifically** (not Drive, not
+  unlisted-only), and **the 4-minute limit is a hard cutoff** — content past 4:00 is
+  simply not evaluated, not just discouraged. Also confirmed the "Register for GEAR"
+  item on the account's to-do list is an optional learning-program nudge, not a
+  submission requirement — nowhere in the actual rules. Full detail in
+  `docs/submission/submission-checklist.md` and `docs/PROGRESS.md`.
