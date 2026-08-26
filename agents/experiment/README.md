@@ -24,22 +24,22 @@
 - **`summarize_baseline.py`** — scores the human run with the same definitions, so the
   two sides are directly comparable.
 
-## Status as of 2026-08-24
+## Status as of 2026-08-26
 
-**19/30 agent-side recalls scored, 0 human baseline runs yet.** Results so far:
-19/19 detected, 19/19 correctly auto-actioned, 0 false positives (dangerous or soft),
-100% precision, 100% recall, ~13s mean time-to-detection. **Not the final numbers** —
-report the real N=30 numbers once both sides are complete, not this partial run; see
-`docs/EXPERIMENT.md` for the live-updated summary and `docs/PROGRESS.md` for the dated
-log of each session's progress.
+**Agent side complete: 30/30 scored.** 30/30 detected, 30/30 correctly auto-actioned,
+0 false positives (dangerous or soft), 100% precision, 100% recall, 13.44s mean
+time-to-detection. **Human baseline is still 0/30** — that half needs a real unaided
+person's time and can't be run by an AI without fabricating the exact comparison this
+experiment exists to make. See `docs/EXPERIMENT.md` for the full write-up, including an
+honest caveat about why 0/30 cases escalated to review in this particular corpus (a
+property of this test set's design, not evidence the escalation path doesn't work).
 
 ## To finish this
 
+Only the human side remains:
+
 ```
 cd agents
-python -m experiment.run_benchmark --limit 10   # repeat until "30/30 total scored"
-python -m experiment.summarize_results
-
-python -m experiment.run_human_baseline          # a real person, timed, unaided
+python -m experiment.run_human_baseline --limit 10   # a real person, timed, unaided — repeat until 30/30
 python -m experiment.summarize_baseline
 ```
