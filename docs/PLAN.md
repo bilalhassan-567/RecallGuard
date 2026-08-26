@@ -36,11 +36,24 @@ or elsewhere are superseded by it.
 - **Mandatory tech (all three required):** Gemini 3.5+ via Gemini API or Vertex AI ✅
   (official cost-saving tips explicitly recommend **Flash first, Pro only for complex
   final reasoning** — relevant to us since the Matching Agent calls Gemini once per
-  invoice line, so Flash-by-default is the right cost posture, escalate to Pro only if
+  recall, so Flash-by-default is the right cost posture, escalate to Pro only if
   match quality demands it) · one of Google ADK / GenAI SDK / Antigravity SDK / GenKit —
-  we use **ADK** ✅ · one of Cloud Run / Cloud SQL / Firestore / GKE / Pub/Sub — we use
-  **Cloud Run + Firestore + Pub/Sub** ✅ (Cloud Scheduler is extra, not itself one of the
-  required five, but doesn't hurt).
+  we use **the GenAI SDK** ✅ (`from google import genai`, in `matching_agent.py` and
+  `image_parser.py` — this is what's actually reasoning in the deployed pipeline;
+  `google-adk` is also in the repo but only powers the standalone `hello_agent/` demo
+  from Phase 1, not anything deployed — corrected 2026-08-26, the doc previously
+  overclaimed ADK here) · one of Cloud Run / Cloud SQL / Firestore / GKE / Pub/Sub — we
+  use **Cloud Run + Firestore + Pub/Sub** ✅ (Cloud Functions and Cloud Scheduler are
+  also live and count as Google Cloud infrastructure, well beyond the one-service
+  minimum).
+- **Judging is three stages, confirmed 2026-08-26 — Stage One is a real gate, not a
+  formality:** Stage One is **pass/fail**, checking only that the submission is
+  complete (category selected, repo, description, video, all required sections
+  present) and actually addresses a challenge — nothing gets to Stage Two without
+  clearing this first. Stage Two is the weighted 1–5 scoring below. Stage Three is the
+  optional bonus. **Practical implication: an incomplete submission scores zero
+  regardless of how good the build is** — the submission checklist matters as much as
+  the code.
 - **Judging (Stage Two, 1–5 scale per criterion, averaged):**
   - **Innovation & Operational Utility — 40%.** Track-specific sub-question for
     Taskmaster: *"Does the agent successfully intercept and complete a multi-step
@@ -282,3 +295,40 @@ sections above.)*
   should read as solving a real, personally-felt friction, not a generic B2B pitch. None
   of this changes the architecture or scope, but it does change the submission narrative
   and the near-term action list — see `docs/PHASES.md`.
+- **2026-08-26 (re-fetched the live main page + rules page directly, full re-check with
+  5 days left before deadline)** — Good news across the board, no material drift on
+  anything load-bearing:
+  - **Deadline, judging weights (40/30/30), and the excluded-country list are all
+    unchanged** and match this doc exactly, word for word.
+  - **Closed out the eligibility self-check this doc flagged as open**: the excluded
+    list is specifically Italy, Quebec, Crimea, Cuba, Iran, Syria, North Korea, Sudan,
+    Belarus, Russia (plus general OFAC-sanctioned countries) — Pakistan is not on it.
+    Not a blocker.
+  - **Found and corrected a real inaccuracy**: this doc claimed "we use ADK" for the
+    mandatory Agent Framework requirement. Checked the actual deployed code — the real
+    pipeline (`matching_agent.py`, `image_parser.py`) imports `google.genai` directly,
+    the **GenAI SDK**, not ADK's own agent classes. `google-adk` is real and in the
+    repo, but only powers the standalone `hello_agent/` demo, which isn't part of the
+    deployed pipeline. Both GenAI SDK and ADK are independently valid options on the
+    official list, so this was never a compliance gap — just an inaccurate claim about
+    *which* one is doing the actual work, now fixed above. Worth reflecting accurately
+    in the submission text too (say "GenAI SDK," not "ADK," for the deployed agents).
+  - **Confirmed the three-stage judging process** — Stage One is a pass/fail
+    completeness gate before any scoring happens, not previously called out explicitly
+    in this doc; added above.
+  - **Hosting requirement is more lenient than this doc previously captured**: the
+    live page says a project "does not need to be publicly accessible or live at the
+    exact moment of submission or judging... just clear proof it was built and
+    deployed on Google Cloud." Doesn't change our plan (RecallGuard is live at
+    https://recallguard-dashboard-306204883908.us-central1.run.app/ and Cloud Run's
+    scale-to-zero makes staying live through Oct 1 effectively free anyway), but it
+    does mean a late outage wouldn't be fatal as long as the demo video shows real
+    proof.
+  - **Full prize structure, not previously fully captured**: Grand Prize $50,000 (1
+    winner); Taskmaster / Collaborative Partner / Fortified Enterprise Fleet $20,000
+    each (1 winner each); Startup Excellence $20,000 (org-only, requires a corporate
+    email — not applicable to us); Individual/Hobbyist $10,000 (2 winners); Best
+    Architectural Design $5,000 (2 winners); Best Multimodal UX $5,000 (2 winners);
+    Honorable Mentions $2,000 (5 winners). Confirms Taskmaster + Individual/Hobbyist +
+    Best Architectural Design + Best Multimodal UX are all genuinely live, stackable
+    targets for a solo entrant — matches the strategy already locked in this doc.

@@ -79,9 +79,12 @@ Firestore → Cloud Run dashboard. Full diagram and failure-path notes:
 
 ## Stack
 
-Gemini (via the free Gemini Developer API — deliberately not Vertex AI, which has no
-free tier) · Google ADK · Cloud Run · Cloud Functions · Firestore · Pub/Sub · Cloud
-Scheduler · Secret Manager · FastAPI (dashboard) · reportlab (compliance PDFs).
+Gemini via the GenAI SDK (`google-genai`) and the free Gemini Developer API —
+deliberately not Vertex AI, which has no free tier · Cloud Run · Cloud Functions ·
+Firestore · Pub/Sub · Cloud Scheduler · Secret Manager · FastAPI (dashboard) ·
+reportlab (compliance PDFs). (Google ADK is also in the repo, powering a standalone
+`agents/hello_agent/` demo — not part of the deployed pipeline, which reasons via the
+GenAI SDK directly.)
 
 ## Run it locally
 
