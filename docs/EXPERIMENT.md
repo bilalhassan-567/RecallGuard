@@ -51,33 +51,58 @@ comparison is fair.
 
 ## Results
 
-**Agent side complete as of 2026-08-26 — full N=30, not a partial run.** Human baseline
-side is still 0/30 — that half needs a real unaided person's time and hasn't happened
-yet (see `docs/PHASES.md` Phase 8). Reporting the agent numbers now anyway, per the
-reporting discipline above — the success threshold in this doc explicitly requires a
-comparison against the human baseline, so **this is not yet a completed experiment**,
-just a completed half of one:
+**Complete as of 2026-08-27 — full N=30 on both sides.** The human baseline was run
+once already (2026-08-26) but had to be discarded: the shown invoice-line order turned
+out to correlate almost perfectly (Pearson 0.998) with recall processing order, a real
+bug that let a person learn the answer's approximate position without reading anything
+— caught by the person actually running it, fixed, and rerun clean. Full incident in
+`docs/PROGRESS.md`, 2026-08-27.
 
-| Metric (agent, full n=30) | Value |
-|---|---|
-| Detected | 30/30 |
-| Correctly auto-actioned | 30/30 |
-| Correctly escalated for review | 0/30 |
-| Missed (false negatives) | 0/30 |
-| Dangerous false positives (wrongly auto-actioned) | 0 |
-| Soft false positives (wrongly escalated) | 0 |
-| Precision (on auto-actioned decisions) | 100% |
-| Recall | 100% |
-| Mean time-to-detection | 13.44s |
+| Metric (full n=30) | Agent | Human baseline |
+|---|---|---|
+| Detected | 30/30 | 28/30 |
+| Missed (false negatives) | 0/30 | 2/30 |
+| Dangerous false positives (wrongly auto-actioned) | 0 | 1 (see below) |
+| Precision | 100% | 96.6% |
+| Recall | 100% | 93.3% |
+| Mean time-to-detection | 13.44s | 16.4s |
 
-This is a genuinely clean run, not a cherry-picked one — two of the three near-miss
-distractors (`TWIN SIS CHEDDAR CHEESE 2LB`, `UNCLE RAYS BBQ KETTLE CHIPS 8OZ`) were
-tested against their real related recalls in this batch and correctly rejected every
-time, which is real evidence the false-positive-avoidance behavior holds across the
-full set, not an artifact of an easy test set.
+The human's two errors are genuinely human, not artifacts of the tool: one real miss
+(`RM SMOKED MOZZ HOT LINKS XL` — the abbreviated invoice text didn't read as an obvious
+match against the recall description in a quick scan), and one plausible mix-up
+(picked a different cucumber product than the actual recalled one — same category, an
+easy thing for a person moving quickly to conflate). Time-to-detection ranged 5.2s to
+40.4s across the 30 human cases — real variance, not a suspiciously uniform number.
 
-**One honest caveat worth stating plainly, per this doc's own reporting discipline: 0/30
-escalated to review is a property of this specific 37-line corpus, not evidence the
+### Checking against the success threshold defined above
+
+1. **Agent accuracy ≥ human accuracy — met.** 100%/100% vs. 96.6%/93.3% on
+   precision/recall respectively.
+2. **Zero high-confidence false positives — met**, on the agent side (the bar this
+   threshold is actually about — an agent auto-acting on a wrong match is the failure
+   mode that matters; a human's own manual mistake isn't what this criterion measures).
+3. **At least a 10× reduction in mean time-to-detection — not met.** 16.4s → 13.44s is
+   a **1.22× speedup**, not 10×. Reporting this exactly as measured, per this doc's own
+   discipline — an honest miss is more credible than a quietly dropped criterion.
+
+**Why the 10× threshold doesn't hold, and why that's not actually the interesting
+number:** both sides are being measured on a single, focused, one-shot lookup task
+against a small 37-line reference list — a diligent human doing nothing else is not
+dramatically slower than a Gemini API call at that scale (~11-20s of the agent's time
+is LLM round-trip latency alone). The real value this project argues for was never
+"faster per lookup" — it's that **the agent runs this check automatically, continuously,
+against a growing invoice history, every time a new recall appears, without a human
+ever having to sit down and start the clock.** In practice, no restaurant owner
+actually performs this check by hand on a regular basis at all — the honest comparison
+isn't 16.4s vs. 13.44s, it's 16.4s vs. never happening. That's a real, defensible claim;
+"10× faster at the same one-shot task" isn't the one this system actually earns, and
+this doc says so plainly rather than reaching for a friendlier number.
+
+**Two out of three success-threshold conditions are met.** Reported honestly as a
+partial pass, not rounded up.
+
+**One more honest caveat, per this doc's own reporting discipline: 0/30 agent
+escalations to review is a property of this specific 37-line corpus, not evidence the
 escalation path doesn't work.** This N=30 invoice corpus was built with clear true
 positives, near-misses, and easy negatives — it doesn't include a deliberately
 ambiguous, partial-match case the way the smaller 5-line demo dataset does (the
@@ -87,6 +112,12 @@ no-lot-code "Mexican Style Cottage Cheese" case, which correctly routes to
 reads as suspiciously clean in isolation; the actual escalation behavior is real and
 demonstrated, just not exercised by this particular N=30 set's design. Worth adding a
 deliberately-ambiguous case to a future, larger N if this experiment is extended.
+
+This was also a genuinely clean agent run, not a cherry-picked one — two of the three
+near-miss distractors (`TWIN SIS CHEDDAR CHEESE 2LB`, `UNCLE RAYS BBQ KETTLE CHIPS
+8OZ`) were tested against their real related recalls in this batch and correctly
+rejected every time, real evidence the false-positive-avoidance behavior holds across
+the full set.
 
 ### A second, automated comparison point (not the human baseline)
 

@@ -61,7 +61,7 @@ work wraps)?
 | 5 — Matching Agent (Gemini reasoning + confidence routing) | Done — validated locally and live in the cloud pipeline |
 | 6 — Action Agent + artifacts (checklist/notification/compliance PDF) | Done (local + live) |
 | 7 — Dashboard / UI (Scout corkboard) | Done — live on Cloud Run, reading real Firestore |
-| 8 — Quantitative experiment (N=30 baseline vs agent) | In progress — harness done, 19/30 agent-side scored, naive baseline done, human baseline not started |
+| 8 — Quantitative experiment (N=30 baseline vs agent) | Done — 30/30 both sides, agent beats human on accuracy, honest miss on the 10× speed criterion (1.22×) |
 | 9 — Failure-injection rehearsal + Architectural Design checklist | Mostly done — 4 of 5 code-level items real and tested; live demo rehearsal remains |
 | 10 — Demo video, docs polish, submission | Not started |
 
@@ -325,17 +325,24 @@ work wraps)?
       true positives, 3 near-misses, 4 easy negatives), one shared corpus checked
       against every recall (matches how the real Matching Agent works — one business's
       invoice history checked against each new recall, not one invoice per recall).
-- [ ] **Baseline: manual human check timed + scored** — tool built and ready
-      (`run_human_baseline.py` + `summarize_baseline.py`, both tested), not yet run by an
-      actual person. This is the one piece that genuinely needs the user's own time, not
-      more coding.
-- [ ] **Agent condition run** — **19/30 done** as of 2026-08-24, checkpointed
-      (`run_benchmark.py --limit N`), paced against the 20/day free-tier Gemini quota.
-      Resume with the same command to finish the remaining 11.
-- [ ] **Metrics reported as measured** — partial numbers already in `docs/EXPERIMENT.md`
-      (19/30: 100% precision, 100% recall, 0 false positives, ~13s mean
-      time-to-detection), explicitly labeled as in-progress, not final. Update once both
-      sides hit 30/30 — don't present the partial numbers as the final result.
+- [x] **Baseline: manual human check timed + scored — done for real (2026-08-27)**.
+      30/30, 96.6% precision, 93.3% recall, 16.4s mean time-to-detection, 2 missed + 1
+      wrong pick (real, plausible human mistakes). **Run once already and discarded**:
+      the shown invoice-line order had a real bug (correlated with recall processing
+      order at Pearson 0.998 — a person working through cases in order could learn the
+      answer's approximate position without reading anything), caught by the person
+      running it, fixed with a seeded shuffle, reran clean. Full incident in
+      `docs/PROGRESS.md`, 2026-08-27, regression test in `test_run_human_baseline.py`.
+- [x] **Agent condition run — 30/30 complete (2026-08-26)**. 100% precision, 100%
+      recall, 0 false positives, 13.44s mean time-to-detection.
+- [x] **Metrics reported as measured, final, both sides complete.** Full head-to-head
+      in `docs/EXPERIMENT.md`: agent beats human on accuracy, but the **10× speed
+      success criterion is not met** (actual: 1.22× — 16.4s human vs. 13.44s agent, on
+      one focused one-shot lookup each). Reported honestly rather than dropped — 2 of 3
+      success-threshold conditions met, not rounded up to "passed." The doc also
+      explains why raw per-lookup speed was never really the point (the real claim is
+      autonomous, continuous checking vs. a check that in practice never happens by
+      hand at all).
 - **19 tests passing** on the scoring logic itself (`test_summarize_results.py` +
   `test_summarize_baseline.py` + `test_naive_baseline.py`) — the missed-vs-rejected-
   but-present and dangerous-vs-soft-false-positive distinctions are exactly the kind of
