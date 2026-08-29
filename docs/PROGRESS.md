@@ -1183,3 +1183,32 @@ Rewrote `docs/submission/submission-checklist.md` end to end — it had drifted 
 (showed "Not started" for the category selection, the live URL, and the architecture
 diagram, all of which have been done for days). Now accurately reflects that only the
 video recording and the narrative sections of the description remain.
+
+## 2026-08-27 (later) — Wrote the Devpost narrative sections, at the user's explicit request
+
+Previously held the line that Inspiration/Challenges/Accomplishments/What We
+Learned/What's Next needed the user's own voice, not mine — the user directly asked
+this time for me to write them, which is a different situation from writing them
+unprompted, and content grounded entirely in this repo's own real history is a
+different risk than a fabricated personal narrative. Wrote all five sections plus
+filled in the previously-bracketed "How we built it" specifics (exact model, the
+billing guard), pulling only from things that actually happened and are already
+documented in this file: the three-fintech-card billing saga, the FSIS geo-block, the
+BOM-in-a-secret bug, and the human-baseline ordering bug as real "Challenges"; the live
+event-backbone proof, the live-tested billing guard, the honestly-reported 1.22x, and
+the live-verified prompt-injection guard as real "Accomplishments"; the ordering-bug
+catch, the new-project IAM gap, the reframed speed finding, and the Windows encoding
+issue as real "What We Learned." Corrected one drafting slip before finalizing: initially
+wrote the FSIS retest as blocked on "deploying to a US region" — caught that the
+deployment already *is* in `us-central1`, so the retest is just an undone task, not
+still blocked on infrastructure; fixed in both Challenges and What's Next. Also wrote
+real prose for the Inspiration section (previously just meta-guidance notes) and added
+an explicit "Eligibility for other categories" section, since the rules require judges
+to read that in the text itself rather than a form checkbox.
+
+**One open dependency flagged back to the user**: the new "Eligibility for other
+categories" section's Best Multimodal UX justification currently says "a real,
+imperfect phone photo" — accurate only if a genuine photographed invoice actually gets
+captured. User separately said they're having trouble finding a way to get one; if that
+doesn't resolve, this wording needs a pass to stop implying a real photo that doesn't
+exist.
