@@ -108,6 +108,12 @@ class TestDashboardApi(unittest.TestCase):
         compliance = storage.get(f"businesses/{BUSINESS['id']}/compliance_log", match_id)
         self.assertIsNotNone(compliance)  # Action Agent actually ran
 
+        # Regression: confirm used to pass a bare {"id": business_id} stub into the
+        # Action Agent, producing a blank "From: Business ()" on every draft generated
+        # via a human confirmation — found by reading a live draft's actual text, not
+        # by re-reading this code. The real business name must appear.
+        self.assertIn(BUSINESS["name"], compliance["notificationDrafts"]["healthDeptDraft"])
+
         # The whole point of this endpoint: prove the PDF that was just generated is
         # actually retrievable afterward, via a separate request — not just that
         # generation succeeded (see docs/PROGRESS.md, 2026-08-27, for why this
@@ -116,6 +122,34 @@ class TestDashboardApi(unittest.TestCase):
         self.assertEqual(pdf_resp.status_code, 200)
         self.assertEqual(pdf_resp.headers["content-type"], "application/pdf")
         self.assertTrue(pdf_resp.content.startswith(b"%PDF"))
+
+    def test_notification_drafts_endpoint_returns_real_text(self):
+        match_id = "m-drafts-test"
+        storage.save(
+            f"businesses/{BUSINESS['id']}/matches",
+            match_id,
+            {
+                "recallId": RECALL["sourceRecordId"],
+                "invoiceLineRef": {"rawText": "some item", "supplier": "Acme"},
+                "confidenceScore": 55, "reasoning": "unsure", "status": "pending_review",
+            },
+        )
+        storage.save(
+            f"businesses/{BUSINESS['id']}/review_queue", match_id,
+            {"matchId": match_id, "reasonForFlag": "unsure", "reviewerDecision": None, "decidedAt": None},
+        )
+        self.client.post(f"/api/review/{match_id}/confirm?business_id={BUSINESS['id']}")
+
+        resp = self.client.get(f"/api/compliance/{match_id}/drafts?business_id={BUSINESS['id']}")
+        self.assertEqual(resp.status_code, 200)
+        text = resp.text
+        self.assertIn("SUPPLIER DRAFT", text)
+        self.assertIn("HEALTH DEPARTMENT DRAFT", text)
+        self.assertIn("DRAFT — NOT SENT", text)  # the actual draft content made it through
+
+    def test_notification_drafts_404_for_unknown_match(self):
+        resp = self.client.get(f"/api/compliance/does-not-exist/drafts?business_id={BUSINESS['id']}")
+        self.assertEqual(resp.status_code, 404)
 
     def test_compliance_pdf_404_for_unknown_match(self):
         resp = self.client.get(f"/api/compliance/does-not-exist/pdf?business_id={BUSINESS['id']}")

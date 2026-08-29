@@ -391,7 +391,7 @@ function render(data) {
       <h3>${escapeHtml(c.recall.productDescription.slice(0, 60))}</h3>
       <p>${escapeHtml(c.match.invoiceLineRef.rawText)} · ${escapeHtml(c.match.invoiceLineRef.supplier || '')}</p>
       <div class="conf"><span class="mono">${c.match.confidenceScore}% match</span></div>
-      ${isAuto ? `<a class="mono" style="font-size:10px; text-decoration:underline; color:var(--rust);" href="/api/compliance/${c.match._id}/pdf" target="_blank">View compliance PDF</a>` : ''}
+      ${isAuto ? `<div><a class="mono" style="font-size:10px; text-decoration:underline; color:var(--rust);" href="/api/compliance/${c.match._id}/pdf" target="_blank">View compliance PDF</a> · <a class="mono" style="font-size:10px; text-decoration:underline; color:var(--rust);" href="/api/compliance/${c.match._id}/drafts" target="_blank">View drafts</a></div>` : ''}
       ${isAuto ? '<div class="stamp">SCOUT<br>CAUGHT IT</div>' : ''}
     `;
     casesDiv.appendChild(card);

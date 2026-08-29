@@ -103,7 +103,11 @@ def resolve_review_item(business_id: str, match_id: str, decision: str) -> dict:
 
     if decision == "confirmed":
         recall = storage.get("recalls", match["recallId"])
-        business = {"id": business_id}
+        # A minimal {"id": business_id} stub used to be passed here, which produced
+        # correct-but-blank "From: Business ()" lines on every draft/PDF generated via
+        # a human confirming a review item — found 2026-08-27 by actually reading a
+        # live-generated draft's text, not by re-reading this code.
+        business = storage.get("businesses", business_id) or {"id": business_id}
         match["status"] = "auto_actioned"  # human confirmed it — safe to act now
         storage.save(f"businesses/{business_id}/matches", match_id, match)
         action_agent.run_action_agent(match, recall, business, match_id=match_id)

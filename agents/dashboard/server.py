@@ -179,6 +179,22 @@ def get_compliance_pdf(match_id: str, business_id: str = DEFAULT_BUSINESS_ID):
     return FileResponse(local_path, media_type="application/pdf")
 
 
+@app.get("/api/compliance/{match_id}/drafts")
+def get_notification_drafts(match_id: str, business_id: str = DEFAULT_BUSINESS_ID):
+    """The PDF only ever contained the compliance record, never the notification
+    drafts — those were persisted correctly (fixed 2026-08-27) but nothing ever
+    exposed them for a person to actually read. This closes that gap."""
+    record = storage.get(f"businesses/{business_id}/compliance_log", match_id)
+    if record is None or not record.get("notificationDrafts"):
+        raise HTTPException(status_code=404, detail=f"no notification drafts for match {match_id}")
+    drafts = record["notificationDrafts"]
+    text = (
+        f"{'=' * 70}\nSUPPLIER DRAFT\n{'=' * 70}\n{drafts.get('supplierDraft', '')}\n\n"
+        f"{'=' * 70}\nHEALTH DEPARTMENT DRAFT\n{'=' * 70}\n{drafts.get('healthDeptDraft', '')}\n"
+    )
+    return StreamingResponse(io.BytesIO(text.encode("utf-8")), media_type="text/plain")
+
+
 def _invoice_status(inv: dict) -> str:
     if inv["flaggedCount"] > 0:
         return "flagged"
