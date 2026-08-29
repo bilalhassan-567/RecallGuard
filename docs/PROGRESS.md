@@ -1354,3 +1354,36 @@ just this invoice's 4 lines against recall `H-1219-2026`.
   showing it — per the user's request to portray this artifact directly in the
   git-tracked project as visible proof the multimodal path was checked with a real
   photo, not just synthetic test images, for judges browsing the repo.
+
+## 2026-08-30 — Final presentability pass: two real UI bugs found by actually clicking
+
+User asked to make the whole thing presentable and submission-ready. Rather than just
+re-reading docs, opened the live dashboard and actually clicked through it —
+immediately found the invoice detail modal had no visible way to close ("outside
+click is not working no cross sign," reported directly while testing).
+
+- **Root cause**: `.close-x` used `position:absolute` inside `.modal`, but `.modal`
+  itself was never `position:relative` — so the X anchored to the nearest positioned
+  ancestor instead, which was the full-viewport `position:fixed` backdrop. It rendered
+  pinned to the browser's actual top-right corner, not the card, making it easy to miss
+  entirely on a real layout. Fixed by adding `position:relative` to `.modal`.
+- **Also genuinely missing, not just broken**: neither modal had a click-outside-to-close
+  handler at all. Added one to both, plus an Escape-key handler for both, since neither
+  existed before.
+- **Live-verified all three close paths** (X click, outside click, Escape) with Playwright
+  against the deployed Cloud Run URL after redeploying, not just locally — bounding-box
+  checked that the X now sits inside the modal card's own coordinates, not the viewport's.
+- **Second bug, found while looking at the same screenshot**: case-board titles were
+  hard-truncated at `.slice(0, 60)` with no ellipsis — long recall names cut off mid-word
+  ("...Cottage Cheese, N"), reading as broken rather than intentional. Fixed to truncate
+  at a word boundary and append "…", plus a full-text `title` tooltip.
+- **Stale numbers/blockers cleaned up while in there**: README's test-count badge said 98,
+  actual current count (reran every test directory fresh) is 103 — fixed. `PHASES.md` had
+  several blockers (frontend framework, PDF library, team size, timeline strategy) that
+  were resolved weeks ago but never marked done — closed them out so the board reflects
+  reality, not history.
+- Submission text/checklist/video-script (`docs/submission/`, private) also brought fully
+  current: the "genuine photographed invoice" item that was the one real open gap in the
+  video-recording checklist is now checked off with the real handwritten-invoice test, and
+  the Devpost description's Multimodal UX section now cites that specific real result
+  instead of speaking only in general terms.
