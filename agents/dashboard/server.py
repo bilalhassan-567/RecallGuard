@@ -137,14 +137,27 @@ async def upload_invoice(
     try:
         # Exactly one parser call per upload request — the only Gemini cost in this
         # endpoint is this single parse_image call, never retried or called twice.
-        lines = csv_parser.parse_csv(tmp_path, supplier=supplier) if source_type == "csv" \
-            else image_parser.parse_image(tmp_path, supplier=supplier)
+        if source_type == "csv":
+            # csv_parser has no way to guess a supplier from content, so if the caller
+            # didn't name one, fall back to the *uploaded* filename's stem here — not
+            # csv_parser's own internal fallback, which would otherwise derive it from
+            # the server-generated tempfile path (tmp*.csv) handed to it below, a
+            # meaningless name nobody typed or uploaded.
+            csv_supplier = supplier or Path(file.filename or "unnamed").stem
+            lines = csv_parser.parse_csv(tmp_path, supplier=csv_supplier)
+        else:
+            # Deliberately pass supplier through unchanged (None if not given) —
+            # parse_image's own fallback chain (explicit supplier > Gemini's
+            # extracted guess > path stem) needs to see None to let Gemini's real
+            # reading of the image win, which is the whole point of this path.
+            lines = image_parser.parse_image(tmp_path, supplier=supplier)
     finally:
         Path(tmp_path).unlink(missing_ok=True)
 
+    stored_supplier = supplier or (lines[0]["supplier"] if lines else None) or Path(file.filename or "unnamed").stem
     try:
         return invoice_store.create_invoice(
-            business_id, file.filename or "unnamed", source_type, lines, supplier=supplier
+            business_id, file.filename or "unnamed", source_type, lines, supplier=stored_supplier
         )
     except ValueError as err:
         raise HTTPException(status_code=422, detail=str(err))

@@ -233,6 +233,24 @@ class TestDashboardApi(unittest.TestCase):
         self.assertEqual(len(body["rawLineItems"]), 2)
         self.assertTrue(all("lineId" in line for line in body["rawLineItems"]))
 
+    def test_upload_csv_without_explicit_supplier_uses_uploaded_filename_not_temp_path(self):
+        # Regression test: the endpoint writes the upload to a server-generated
+        # tempfile before parsing (NamedTemporaryFile), and csv_parser's own internal
+        # fallback derives an unnamed CSV's "supplier" from whatever path it's handed.
+        # Passing that tempfile path straight through produced garbage like
+        # "tmpjtql5bqw" instead of anything derived from what was actually uploaded —
+        # found live, 2026-08-30, while seeding a demo case for the submission video.
+        csv_bytes = b"description,qty,unit,date\nItem A,1,case,2026-08-01\n"
+        resp = self.client.post(
+            "/api/invoices/upload",
+            files={"file": ("restaurant_depot_005_ambiguous.csv", csv_bytes, "text/csv")},
+            data={"business_id": BUSINESS["id"]},
+        )
+        body = resp.json()
+        self.assertEqual(body["supplier"], "restaurant_depot_005_ambiguous")
+        self.assertTrue(all(line["supplier"] == "restaurant_depot_005_ambiguous" for line in body["rawLineItems"]))
+        self.assertNotIn("tmp", body["supplier"].lower())
+
     def test_upload_image_calls_parser_exactly_once(self):
         fake_lines = [{
             "rawText": "Test Item", "supplier": "Acme", "quantity": "1", "unit": "case",
