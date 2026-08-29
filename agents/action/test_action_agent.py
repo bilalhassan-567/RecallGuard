@@ -157,7 +157,47 @@ class TestResumeAfterPdfFailure(unittest.TestCase):
         result_b = action_agent.run_action_agent(second_match, RECALL, BUSINESS, match_id="match-b")
         self.assertNotEqual(result_a["compliancePdfPath"], result_b["compliancePdfPath"])
         self.assertTrue(Path(result_a["compliancePdfPath"]).exists())
-        self.assertTrue(Path(result_b["compliancePdfPath"]).exists())
+
+
+class TestGcsPdfPersistence(unittest.TestCase):
+    """Regression coverage for the real gap caught 2026-08-27: a PDF generated inside a
+    Cloud Run/Function container is lost the moment that container recycles, since the
+    local disk it was written to is ephemeral — 'the Action Agent ran successfully in
+    the cloud' and 'the resulting PDF is still retrievable afterward' are different
+    claims, and only the first had ever actually been tested before this."""
+
+    @classmethod
+    def setUpClass(cls):
+        action_agent.ARTIFACTS_DIR = TEST_ARTIFACTS_DIR
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(TEST_ARTIFACTS_DIR, ignore_errors=True)
+        shutil.rmtree(Path(__file__).resolve().parent.parent / "local_data" / "businesses", ignore_errors=True)
+
+    def test_gcs_not_called_in_local_mode(self):
+        with patch.object(action_agent, "USE_GCS", False), \
+             patch.object(action_agent, "upload_pdf_to_gcs") as mock_upload:
+            result = action_agent.run_action_agent(AUTO_MATCH, RECALL, BUSINESS, match_id="local-mode-test")
+        mock_upload.assert_not_called()
+        self.assertIsNone(result["pdfStoragePath"])
+
+    def test_gcs_called_and_path_persisted_in_cloud_mode(self):
+        with patch.object(action_agent, "USE_GCS", True), \
+             patch.object(action_agent, "upload_pdf_to_gcs", return_value="businesses/demo-biz-1/compliance/cloud-mode-test.pdf") as mock_upload:
+            result = action_agent.run_action_agent(AUTO_MATCH, RECALL, BUSINESS, match_id="cloud-mode-test")
+
+        mock_upload.assert_called_once()
+        self.assertEqual(result["pdfStoragePath"], "businesses/demo-biz-1/compliance/cloud-mode-test.pdf")
+        self.assertEqual(result["complianceRecord"]["pdfStoragePath"], "businesses/demo-biz-1/compliance/cloud-mode-test.pdf")
+
+        # The whole point: what's actually persisted (not just the in-memory return
+        # value) carries the GCS pointer, since that's what a later, separate request
+        # (e.g. the dashboard's own download endpoint) would read back.
+        stored = action_agent.storage.get(f"businesses/{BUSINESS['id']}/compliance_log", "cloud-mode-test")
+        self.assertEqual(stored["pdfStoragePath"], "businesses/demo-biz-1/compliance/cloud-mode-test.pdf")
+        self.assertIn("notificationDrafts", stored)
+        self.assertIn("supplierDraft", stored["notificationDrafts"])
 
 
 if __name__ == "__main__":

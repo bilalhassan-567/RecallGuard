@@ -272,6 +272,31 @@ work wraps)?
   sibling-import pattern used everywhere else (`import agent` returned whichever module
   got imported first, not the intended one) the moment both subpackages were on
   `sys.path` at once. Renamed both to `matching_agent.py` / `action_agent.py`.
+- [x] **Compliance PDF now durably persisted in the cloud, not just generated
+      (2026-08-27/29)** — a real gap, caught because the user tried to actually retrieve
+      one and asked where it was. "The Action Agent ran successfully in the cloud" and
+      "the resulting PDF is still retrievable afterward" turned out to be two different
+      claims — only the first had ever been verified. A Cloud Run/Function container's
+      local disk is ephemeral, so every PDF generated live had been silently lost the
+      moment that container recycled. Fixed properly: in cloud mode, the PDF now
+      uploads to a dedicated, private Cloud Storage bucket
+      (`{project}-compliance-pdfs`, Always-Free tier), and a new dashboard endpoint
+      (`GET /api/compliance/{matchId}/pdf`) serves it back from GCS in the cloud or
+      local disk in dev, same call shape either way. Also folded notification drafts
+      into the same retrievable `compliance_log` record (previously they only lived in
+      an internal progress doc nothing exposed). **Live-tested end to end, the exact
+      round trip that was missing before**: confirmed a real pending review case on the
+      live dashboard, which surfaced a second real bug immediately (the dashboard's own
+      Cloud Run service was missing the `GCP_PROJECT_ID` env var, producing an invalid
+      empty-prefixed bucket name) — fixed, redeployed, retried the same confirm (a real
+      production exercise of the per-step resumability feature, not just a unit test of
+      it), then downloaded the resulting PDF from a completely separate request and
+      confirmed it's a real, valid PDF file. Added a "View compliance PDF" link
+      directly on auto-actioned case cards so this is a real, visible dashboard feature,
+      not just an API endpoint. 4 new tests (2 in `test_action_agent.py` covering the
+      GCS-vs-local branching, 2 in `test_server.py` covering the new endpoint, plus
+      extended the existing live-confirm test to actually download and validate the
+      PDF bytes) — all mocking GCS, so the suite never touches real cloud.
 
 ## Phase 7 — Dashboard / UI ("Scout" corkboard)
 

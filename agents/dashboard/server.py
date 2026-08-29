@@ -6,19 +6,23 @@ UI rewrite, just a different storage.py backend.
 Run from agents/: uvicorn dashboard.server:app --reload --port 8000
 Then open http://127.0.0.1:8000/
 """
+import io
+import os
 import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # agents/ (orchestrator.py, storage.py)
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # this dir (us_state_positions.py) —
 # needed because uvicorn loads this file as the `dashboard` package's `server` submodule,
 # so its own directory isn't on sys.path the way a standalone script's would be.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "invoices"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "action"))
+import action_agent  # noqa: E402
 import csv_parser  # noqa: E402
 import image_parser  # noqa: E402
 import invoice_store  # noqa: E402
@@ -151,6 +155,28 @@ def delete_invoice(invoice_id: str, business_id: str = DEFAULT_BUSINESS_ID) -> d
     if not invoice_store.delete_invoice(business_id, invoice_id):
         raise HTTPException(status_code=404, detail=f"no invoice {invoice_id}")
     return {"deleted": True}
+
+
+@app.get("/api/compliance/{match_id}/pdf")
+def get_compliance_pdf(match_id: str, business_id: str = DEFAULT_BUSINESS_ID):
+    record = storage.get(f"businesses/{business_id}/compliance_log", match_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail=f"no compliance record for match {match_id}")
+
+    storage_path = record.get("pdfStoragePath")
+    if storage_path:
+        # Cloud mode: the PDF outlived the container that generated it, in GCS.
+        from google.cloud import storage as gcs_storage
+        client = gcs_storage.Client()
+        blob = client.bucket(action_agent.compliance_bucket_name()).blob(storage_path)
+        pdf_bytes = blob.download_as_bytes()
+        return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
+
+    # Local dev mode: no GCS involved, the PDF is still sitting on local disk.
+    local_path = action_agent.ARTIFACTS_DIR / f"{match_id}.pdf"
+    if not local_path.exists():
+        raise HTTPException(status_code=404, detail=f"compliance PDF not found for match {match_id}")
+    return FileResponse(local_path, media_type="application/pdf")
 
 
 def _invoice_status(inv: dict) -> str:

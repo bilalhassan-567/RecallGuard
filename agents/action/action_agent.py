@@ -11,11 +11,20 @@ SECURITY / SAFETY DESIGN (read before touching this file):
    hidden inside a recall notice (prompt injection has nowhere to land if there's no
    prompt). The plan's "treat recall content as data, never instructions" rule is
    enforced structurally here, not just by policy.
-2. **This module never sends anything over the network.** No smtplib, no HTTP POST to
-   any notification/email API — check the imports below, there aren't any that could.
-   Every "notification" produced is a draft file, explicitly labeled DRAFT / NOT SENT.
-   This matches the MVP's deliberate scope cut in docs/PLAN.md: autonomous external
-   actions are out of scope for the hackathon build, on purpose, not as an oversight.
+2. **This module has no arbitrary/attacker-redirectable send capability.** No smtplib,
+   no HTTP client to arbitrary endpoints, no raw sockets — check the imports below,
+   there aren't any (enforced by `test_no_network_send_capability_in_module`'s AST
+   parse, not just a promise). Every "notification" produced is a draft file,
+   explicitly labeled DRAFT / NOT SENT, matching the MVP's deliberate scope cut in
+   docs/PLAN.md: autonomous external actions are out of scope, on purpose.
+   **One real, narrow exception, added 2026-08-27**: in cloud mode, the generated PDF
+   is uploaded to a Cloud Storage bucket so it outlives the ephemeral container that
+   generated it (a Cloud Run/Function's local disk doesn't survive a restart — this
+   module used to silently lose every compliance PDF it produced in the cloud, caught
+   only when someone actually tried to retrieve one afterward). This is not the same
+   risk as the imports above: the bucket name and blob path are built entirely from our
+   own structural values (business ID, sanitized match ID) never from recall/invoice
+   text, so there's no way adversarial content could redirect where anything is written.
 3. **Structural refusal, not just caller discipline.** `run_action_agent` re-checks
    `match["status"] == "auto_actioned"` itself and raises if it isn't — so a bug upstream
    (e.g. a UI that calls this on a `pending_review` match by mistake) fails loudly here
@@ -28,6 +37,7 @@ SECURITY / SAFETY DESIGN (read before touching this file):
    never built directly from free-text recall/invoice content, even though recall IDs
    originate from an external source (FSIS/openFDA) and are technically untrusted too.
 """
+import os
 import re
 import sys
 from datetime import datetime, timezone
@@ -40,6 +50,41 @@ import storage
 import pdf_export  # sibling in agents/action/ — flat-import style, matches ingestion/invoices/matching
 
 ARTIFACTS_DIR = Path(__file__).resolve().parent.parent / "local_data" / "artifacts"
+
+# Local disk is fine for local dev, but a Cloud Run/Function container's local
+# filesystem is ephemeral — a PDF written there is gone the moment that instance
+# recycles, with no way to retrieve it afterward. In cloud mode (same flag storage.py
+# uses), also upload the PDF to Cloud Storage so it durably outlives the container that
+# generated it. Caught 2026-08-27: this had never actually been verified — the Action
+# Agent running successfully in the cloud and the resulting PDF staying retrievable
+# afterward are two different claims, and only the first had ever been tested.
+USE_GCS = os.environ.get("USE_FIRESTORE", "FALSE").upper() == "TRUE"
+GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "")
+
+_gcs_client = None
+
+
+def _gcs_client_lazy():
+    global _gcs_client
+    if _gcs_client is None:
+        from google.cloud import storage as gcs_storage
+        _gcs_client = gcs_storage.Client()
+    return _gcs_client
+
+
+def compliance_bucket_name() -> str:
+    return f"{GCP_PROJECT_ID}-compliance-pdfs"
+
+
+def upload_pdf_to_gcs(local_path: Path, business_id: str, safe_id: str) -> str:
+    """Returns the GCS blob name (not a public URL — the bucket is private; the
+    dashboard's own /api/compliance/{match_id}/pdf endpoint reads it back with the
+    service account's own credentials, matching the businessId-scoped access model
+    used everywhere else rather than a world-readable link)."""
+    bucket = _gcs_client_lazy().bucket(compliance_bucket_name())
+    blob_name = f"businesses/{business_id}/compliance/{safe_id}.pdf"
+    bucket.blob(blob_name).upload_from_filename(str(local_path))
+    return blob_name
 
 # Keyword -> storage hint. Deliberately simple keyword matching, not another LLM call —
 # this is a minor convenience field on the checklist, not something worth spending a
@@ -162,6 +207,15 @@ def run_action_agent(match: dict, recall: dict, business: dict, match_id: str | 
 
     pdf_path = pdf_export.write_compliance_pdf(compliance_record, ARTIFACTS_DIR / f"{safe_id}.pdf")
 
+    pdf_storage_path = None
+    if USE_GCS:
+        pdf_storage_path = upload_pdf_to_gcs(pdf_path, business_id, safe_id)
+
+    # Fold drafts and the GCS pointer into the same record the dashboard already reads
+    # (compliance_log) — previously drafts only lived in action_progress, which nothing
+    # exposed on the dashboard at all.
+    compliance_record = {**compliance_record, "notificationDrafts": drafts, "pdfStoragePath": pdf_storage_path}
+
     storage.save(f"businesses/{business_id}/compliance_log", safe_id, compliance_record)
     storage.save(f"businesses/{business_id}/action_progress", safe_id, {"step": "complete"})
 
@@ -170,6 +224,7 @@ def run_action_agent(match: dict, recall: dict, business: dict, match_id: str | 
         "notificationDrafts": drafts,
         "complianceRecord": compliance_record,
         "compliancePdfPath": str(pdf_path),
+        "pdfStoragePath": pdf_storage_path,
     }
 
 

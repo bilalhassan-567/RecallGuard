@@ -108,6 +108,40 @@ class TestDashboardApi(unittest.TestCase):
         compliance = storage.get(f"businesses/{BUSINESS['id']}/compliance_log", match_id)
         self.assertIsNotNone(compliance)  # Action Agent actually ran
 
+        # The whole point of this endpoint: prove the PDF that was just generated is
+        # actually retrievable afterward, via a separate request — not just that
+        # generation succeeded (see docs/PROGRESS.md, 2026-08-27, for why this
+        # specific gap went uncaught: those are two different claims).
+        pdf_resp = self.client.get(f"/api/compliance/{match_id}/pdf?business_id={BUSINESS['id']}")
+        self.assertEqual(pdf_resp.status_code, 200)
+        self.assertEqual(pdf_resp.headers["content-type"], "application/pdf")
+        self.assertTrue(pdf_resp.content.startswith(b"%PDF"))
+
+    def test_compliance_pdf_404_for_unknown_match(self):
+        resp = self.client.get(f"/api/compliance/does-not-exist/pdf?business_id={BUSINESS['id']}")
+        self.assertEqual(resp.status_code, 404)
+
+    def test_compliance_pdf_served_from_gcs_in_cloud_mode(self):
+        match_id = "m-gcs-test"
+        storage.save(
+            f"businesses/{BUSINESS['id']}/compliance_log",
+            match_id,
+            {"pdfStoragePath": "businesses/biz-1/compliance/m-gcs-test.pdf"},
+        )
+        fake_blob = mock.MagicMock()
+        fake_blob.download_as_bytes.return_value = b"%PDF-fake-content"
+        fake_bucket = mock.MagicMock()
+        fake_bucket.blob.return_value = fake_blob
+        fake_client = mock.MagicMock()
+        fake_client.bucket.return_value = fake_bucket
+
+        with mock.patch("google.cloud.storage.Client", return_value=fake_client):
+            resp = self.client.get(f"/api/compliance/{match_id}/pdf?business_id={BUSINESS['id']}")
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content, b"%PDF-fake-content")
+        fake_bucket.blob.assert_called_once_with("businesses/biz-1/compliance/m-gcs-test.pdf")
+
     def test_reject_unknown_match_returns_404(self):
         resp = self.client.post(f"/api/review/does-not-exist/reject?business_id={BUSINESS['id']}")
         self.assertEqual(resp.status_code, 404)
