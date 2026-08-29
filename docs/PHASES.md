@@ -4,8 +4,11 @@ The one file to check for "where are we." Flip statuses here as work lands — d
 drift from `docs/PROGRESS.md` (the detailed log) or from reality. Status values: **Not
 started** · **In progress** · **Blocked** · **Done**.
 
-**Last updated:** 2026-08-26 — full local pipeline built and tested; GCP billing is the
-one open blocker for anything cloud-side.
+**Last updated:** 2026-08-29 — full pipeline live on GCP, real N=30 done both sides,
+a real handwritten-invoice test verified end to end. Submission text/checklist/video
+script are all final, ready-to-paste content — the only things left are recording and
+uploading the demo video and clicking submit on Devpost, both of which need the user
+directly (this session can't record audio/video or hold the user's Devpost login).
 
 ---
 
@@ -63,7 +66,7 @@ work wraps)?
 | 7 — Dashboard / UI (Scout corkboard) | Done — live on Cloud Run, reading real Firestore |
 | 8 — Quantitative experiment (N=30 baseline vs agent) | Done — 30/30 both sides, agent beats human on accuracy, honest miss on the 10× speed criterion (1.22×) |
 | 9 — Failure-injection rehearsal + Architectural Design checklist | Mostly done — 4 of 5 code-level items real and tested; live demo rehearsal remains |
-| 10 — Demo video, docs polish, submission | Not started |
+| 10 — Demo video, docs polish, submission | Docs/text/checklist all final and ready-to-paste; video not yet recorded, not yet submitted |
 
 ---
 
@@ -514,9 +517,11 @@ Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
       2026-08-29. Checked into the repo at `docs/img/handwritten-invoice-real-test.jpeg`
       and shown in the root `README.md` as visible evidence for judges, not just
       claimed in prose. The Best Multimodal UX moment is now genuine, not staged.
-- [ ] **Timeline strategy** — see the calendar reality check above; needs an answer before
-      Day 1 starts, since it changes how aggressively to cut scope. Starting from a
-      zero GCP setup (just confirmed above) makes this more pressing, not less.
+- [x] **Timeline strategy — moot now, resolved by outcome.** The original Day 9/10
+      compression risk didn't need a formal decision in the end: the build ran ahead of
+      the plan's own day-by-day pacing, so the real experiment (Phase 8) finished
+      2026-08-27, well before the deadline, leaving Aug 30–31 for docs polish and
+      submission rather than being squeezed into deadline day itself.
 - [x] **FSIS reachability — investigated, not fixable from dev (2026-08-22/23).** No API
       key needed (confirmed via real working reference code), but the endpoint 403'd from
       BOTH the dev sandbox AND the user's real Pakistani residential network — same
@@ -529,12 +534,15 @@ Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
       The plan's existing failure-handling design (retry/log/continue, never silently
       skip) already covers "a recall source is unreachable" without special-casing this —
       real-world validation of that design, not just a hypothetical for the demo.
-- [ ] **Sample invoice sets (5–10, varied suppliers/formats) + one real photographed
-      invoice** — not yet collected. Explicitly flagged in the plan as "takes longer to
-      assemble well than people expect and gates Days 4–6" — worth starting in parallel
-      with Phase 1, not waiting for Phase 4.
-- [ ] **Frontend framework for the dashboard** — not locked. Plan says "keep it simple," but
-      no concrete choice yet (plain HTML/JS on Cloud Run vs. a framework).
-- [ ] **PDF/doc generation library** for the compliance record — not chosen yet.
-- [ ] **Team size** — building solo? (Individual/Hobbyist prize targeting assumes so; the
-      live rules allow teams of any size with no cap, so worth confirming explicitly.)
+- [x] **Sample invoice sets, resolved** — 5 varied-format CSVs (Phase 4) plus the N=30
+      experiment's own 3-CSV/37-line corpus (Phase 8), plus one genuine photographed
+      invoice (2026-08-29, see above). No longer a gap.
+- [x] **Frontend framework — resolved: plain HTML/JS**, not a framework. Adapted directly
+      from the brand-guide mockup CSS, served by FastAPI on Cloud Run (Phase 7). Kept it
+      simple per the plan's own instinct — no build step, no framework dependency to
+      break under time pressure.
+- [x] **PDF library — resolved: `reportlab`** (Phase 6) — pure Python, no external system
+      binary dependency, smaller supply-chain surface than the alternative considered
+      (`weasyprint`, needs Pango/cairo).
+- [x] **Team size — solo.** Individual/Hobbyist eligibility confirmed and stated in
+      `docs/submission/devpost-description.md`.

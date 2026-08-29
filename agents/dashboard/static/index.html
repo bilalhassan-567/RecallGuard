@@ -138,8 +138,9 @@
   }
   .modal-backdrop.open{display:flex;}
   .modal{
-    background:var(--ledger); border:1px solid var(--line); border-radius:6px;
-    max-width:620px; width:92%; padding:24px; box-shadow:0 12px 40px rgba(0,0,0,0.3);
+    position:relative; background:var(--ledger); border:1px solid var(--line);
+    border-radius:6px; max-width:620px; width:92%; padding:24px;
+    box-shadow:0 12px 40px rgba(0,0,0,0.3);
   }
   .modal h2{font-size:18px; margin:0 0 4px;}
   .modal .badge2{font-size:11px; background:var(--amber); padding:4px 10px; border-radius:20px; display:inline-block; margin-bottom:14px;}
@@ -388,7 +389,7 @@ function render(data) {
     card.innerHTML = `
       <div class="pin"></div>
       <span class="tag ${tagClass}">${isAuto ? 'Auto-Actioned' : 'Pending Review'}</span>
-      <h3>${escapeHtml(c.recall.productDescription.slice(0, 60))}</h3>
+      <h3 title="${escapeHtml(c.recall.productDescription)}">${escapeHtml(truncateAtWord(c.recall.productDescription, 60))}</h3>
       <p>${escapeHtml(c.match.invoiceLineRef.rawText)} · ${escapeHtml(c.match.invoiceLineRef.supplier || '')}</p>
       <div class="conf"><span class="mono">${c.match.confidenceScore}% match</span></div>
       ${isAuto ? `<div><a class="mono" style="font-size:10px; text-decoration:underline; color:var(--rust);" href="/api/compliance/${c.match._id}/pdf" target="_blank">View compliance PDF</a> · <a class="mono" style="font-size:10px; text-decoration:underline; color:var(--rust);" href="/api/compliance/${c.match._id}/drafts" target="_blank">View drafts</a></div>` : ''}
@@ -429,7 +430,17 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function truncateAtWord(str, maxLen) {
+  if (!str || str.length <= maxLen) return str || '';
+  const cut = str.slice(0, maxLen);
+  const lastSpace = cut.lastIndexOf(' ');
+  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut) + '…';
+}
+
 document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-backdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'modal-backdrop') closeModal();
+});
 document.getElementById('btn-confirm').addEventListener('click', () => decide('confirm'));
 document.getElementById('btn-reject').addEventListener('click', () => decide('reject'));
 
@@ -599,6 +610,14 @@ document.getElementById('invoice-upload-form').addEventListener('submit', async 
 document.getElementById('inv-search').addEventListener('input', loadInvoices);
 document.getElementById('inv-status-filter').addEventListener('change', loadInvoices);
 document.getElementById('invoice-modal-close').addEventListener('click', closeInvoiceModal);
+document.getElementById('invoice-modal-backdrop').addEventListener('click', (e) => {
+  if (e.target.id === 'invoice-modal-backdrop') closeInvoiceModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  closeModal();
+  closeInvoiceModal();
+});
 document.getElementById('inv-delete-btn').addEventListener('click', () => currentInvoiceId && deleteInvoice(currentInvoiceId));
 document.getElementById('inv-export-btn').addEventListener('click', exportInvoiceCsv);
 

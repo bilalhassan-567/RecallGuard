@@ -2,7 +2,7 @@
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
-![Tests](https://img.shields.io/badge/tests-98%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-103%20passing-brightgreen.svg)
 ![Hackathon](https://img.shields.io/badge/hackathon-All%20Things%20Agentic-orange.svg)
 ![Live on Cloud Run](https://img.shields.io/badge/live-Cloud%20Run%20%2B%20Firestore-4285F4.svg)
 
@@ -64,7 +64,7 @@ See [`docs/PHASES.md`](docs/PHASES.md) for the exact, current state of every pha
   100% precision, 100% recall, 13.44s mean time-to-detection on the agent side, plus a
   second automated (non-LLM) comparison baseline. Human baseline is the one piece
   honestly still open — it needs a real unaided person's time, not more code.
-- **98 automated tests**, all passing, across every module above — including tests
+- **103 automated tests**, all passing, across every module above — including tests
   that monkeypatch the Gemini call and assert it's invoked exactly once, so the test
   suite itself never risks burning API quota by accident.
 
