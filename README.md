@@ -68,6 +68,22 @@ See [`docs/PHASES.md`](docs/PHASES.md) for the exact, current state of every pha
   that monkeypatch the Gemini call and assert it's invoked exactly once, so the test
   suite itself never risks burning API quota by accident.
 
+## Real-world test, not a mocked one
+
+A genuine handwritten invoice — real pen, real spiral-notebook paper, real lighting —
+photographed and uploaded through the live dashboard exactly as a business owner would:
+
+<img src="docs/img/handwritten-invoice-real-test.jpeg" alt="Photographed handwritten invoice used as a real multimodal test" width="420">
+
+Gemini's vision input read it directly (no transcription, no cleanup) and matched one
+line — `"3 Selectos Latinos Requeson Mexican Cheese 16oz Case"` — at **95% confidence**
+against a real live recall (`H-1219-2026`, Listeria in cottage cheese), auto-actioning
+it end to end: pull-checklist, supplier + health-department drafts, and a timestamped
+compliance PDF, all independently re-fetched afterward from Cloud Storage and Firestore
+over the live network (not just checked for a clean exit code) to confirm they're
+genuinely retrievable, not just generated. See the 2026-08-29 entry in
+[`docs/PROGRESS.md`](docs/PROGRESS.md) for the full verification trail.
+
 ## Architecture
 
 Three agents mapped 1:1 to three real jobs — **sense → decide → act**: a Recall

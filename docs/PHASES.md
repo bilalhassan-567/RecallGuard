@@ -506,12 +506,14 @@ Logged 2026-08-22 during the full plan re-check, before Phase 1 starts:
       which came from a successful API call using our own `gemini-3.5-flash` setting.)
       **Phase 1 local scaffolding is done.** Only "deployed to Cloud Run" remains, pending
       the GCP billing ticket.
-- [ ] **A genuine photographed invoice, before the demo recording** — the multimodal path
-      is code-complete and tested against a synthetic image, but the actual demo script
-      (`docs/submission/demo-video-script.md`) needs a real phone photo of a real paper
-      invoice, not a generated one, for the Best Multimodal UX moment to be honest. Low
-      effort (photograph any invoice, even a made-up one printed on paper), just needs
-      doing before Day 10.
+- [x] **A genuine photographed invoice, tested live (2026-08-29)** — a real photographed
+      handwritten invoice (not printed, not synthetic) was uploaded through the live
+      dashboard and correctly matched at 95% confidence against a real recall
+      (H-1219-2026). Full round-trip live-verified (PDF, drafts, case list, all
+      independently re-fetched, not just generated) — see `docs/PROGRESS.md`,
+      2026-08-29. Checked into the repo at `docs/img/handwritten-invoice-real-test.jpeg`
+      and shown in the root `README.md` as visible evidence for judges, not just
+      claimed in prose. The Best Multimodal UX moment is now genuine, not staged.
 - [ ] **Timeline strategy** — see the calendar reality check above; needs an answer before
       Day 1 starts, since it changes how aggressively to cut scope. Starting from a
       zero GCP setup (just confirmed above) makes this more pressing, not less.
