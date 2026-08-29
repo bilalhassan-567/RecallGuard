@@ -1387,3 +1387,44 @@ click is not working no cross sign," reported directly while testing).
   video-recording checklist is now checked off with the real handwritten-invoice test, and
   the Devpost description's Multimodal UX section now cites that specific real result
   instead of speaking only in general terms.
+
+## 2026-08-30 — Seeded a live review case for the demo video, found a third real bug
+
+Preparing to record the submission video: needed a genuine pending-review item sitting
+in "Needs Your Nose" so the human-review beat could be filmed as a live click-through
+instead of narrated over old data. Re-uploaded the known-ambiguous sample invoice
+(`restaurant_depot_005_ambiguous.csv`) through the live `/api/invoices/upload` endpoint,
+then ran matching scoped to just its 5 new lines against the existing live recall —
+landed at 55% confidence on the cottage-cheese line, correctly escalated, 4 others
+correctly rejected. One real Gemini call, disclosed, spent specifically to get real
+content on camera rather than fabricate the moment.
+
+**Found a real bug while checking the result**: the seeded invoice's `supplier` field
+came back as `tmpjtql5bqw` — a server-generated tempfile name. Root cause:
+`/api/invoices/upload` writes every upload to a `NamedTemporaryFile` before parsing,
+and `csv_parser.parse_csv`'s own fallback (`Path(path).stem`) picks whatever path it's
+handed when no supplier is given — for a script calling it directly on a real named
+file that's a sensible guess, but for the live upload endpoint it was always the
+meaningless temp path, not the file anyone actually uploaded. This would have affected
+**any CSV uploaded through the live dashboard without an explicit supplier typed in**,
+not just this one seeded case — a real, previously-undetected production bug, not a
+one-off glitch.
+
+Fixed in `server.py`: the CSV path now derives its fallback from the *uploaded*
+filename before calling the parser; the image path was deliberately left untouched,
+since `image_parser.parse_image`'s own fallback chain (explicit supplier > Gemini's
+extracted guess > path stem) needs to see `None` passed through so Gemini's real
+reading of the invoice photo keeps winning — patching this blindly for both paths
+would have quietly regressed the multimodal path's actual value. Added a regression
+test asserting the derived supplier matches the uploaded filename, not a temp name
+(26 → 27 tests in `dashboard/`). Redeployed, then verified the fix live with a real
+throw-away upload (correct filename-derived supplier), deleted it immediately after.
+Directly patched the already-saved seeded invoice and match records in Firestore with
+the correct supplier, since the fix only prevents this going forward, not retroactively.
+
+Also reviewed the seven screenshots the user had already uploaded to the Devpost image
+gallery — four showed the modal-close and title-truncation bugs fixed earlier today
+(before the fixes were live), flagged for a retake; three others (a real live
+Cloud Run services list, Firestore data browser, and Cloud Run metrics page the user
+had captured independently) turned out to be exactly the Google Cloud proof evidence
+the submission checklist calls for, and were captioned as such rather than replaced.
